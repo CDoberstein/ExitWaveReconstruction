@@ -1,0 +1,54 @@
+Here, an overview over the finite element interface classes is given.
+We will distinguish between linear operator interfaces (which additionally
+to "apply(...)" and "applyAdd(...)" have a method "assembleAddMatrix(...)" to assemble a system matrix)
+and nonlinear operators (which cannot assemble a matrix).
+The first table enlists the linear operator interfaces, where the second column displays the matrix assembled in "assembleAddMatrix(...)"
+(the result of "apply(...)" then is just this matrix multiplied by the vector of function values, passed to "apply(...)" as the first argument),
+the left column gives the corresponding class names, and the right column enlists the methods to be overloaded.
+The second table shows all nonlinear operator interfaces and has the same structure, only the middle column shows the result of the method "apply(...)".
+In both cases, $\phi$ shall represent the discretized function, which is passed to "apply(...)" or "applyAdd(...)" as the first argument,
+$\varphi_i$ represents the $i$th finite element base function, $w$, $f$, $A$ are functions, which have to be implemented by the overload method
+in the derived class. An arrow over a function signifies that the function is vector-valued, two arrows
+symbolize a matrix. The implementation of $f\left(\phi(x),\nabla\phi(x),x\right)$ gets $x$ and the function $\phi$ as argument, where $\phi$
+itself may be evaluated at $x$, or its gradient, or both. $n_g$ shall denote the number of components of a vector function $\vec g$.
+
+{
+\renewcommand{\arraystretch}{2}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{llll}
+  \hline
+    \textbf{FELin...Interface} & \textbf{expression} & \textbf{overload method} & \textbf{comment} \\
+  \hline
+    ScalarWeightedMass      & $\left(\int_\Omega w(x) \varphi_j(x) \varphi_i(x) dx\right)_{ij}$                                                            & $w$: getCoeff() \\
+    ScalarWeightedStiff     & $\left(\int_\Omega w(x) \nabla\varphi_j(x) \cdot \nabla\varphi_i(x)dx \right)_{ij}$                                          & $w$: getCoeff() \\
+    MatrixWeightedStiff     & $\left(\int_\Omega A(x)\nabla \varphi_j \cdot \nabla \varphi_i dx\right)_{ij}$                                               & $A$: getCoeffMatrix() & $A$ symmetric \\
+    AsymMatrixWeightedStiff & $\left(\int_\Omega A(x)\nabla \varphi_j \cdot \nabla \varphi_i dx\right)_{ij}$                                               & $A$: getCoeffMatrix() & $A$ asymmetric \\
+    ScalarWeightedMixedDiff & $\left(\int_\Omega w(x) \frac{\partial\varphi_j(x)}{\partial x_s} \frac{\partial\varphi_i(x)}{\partial x_t} dx\right)_{ij}$  & $w$: getCoeff() \\
+    ScalarWeightedSemiDiff  & $\left(\int_\Omega \varphi_j(x) \frac{\partial\varphi_i(x)}{\partial x_k} w(x)\,dx\right)_{ij} $                             & $w$: getCoeff() & can also return the transpose \\
+    VectorWeightedSemiDiff  & $\left(\int_\Omega \varphi_j(x) (\nabla \varphi_i(x) \cdot \vec{w}(x))\,dx\right)_{ij} $                                     & $\vec{w}$: getCoefficientVector() & can also return the transpose, \\
+                            &                                                                                                                              & & $n_w=$domain dimension \\
+  \hline
+\end{tabular}
+}
+}
+
+\vspace*{1cm}
+{
+\renewcommand{\arraystretch}{2}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{llll}
+  \hline
+    \textbf{FENonlin...Interface} & \textbf{expression} & \textbf{overload method} & \textbf{comment} \\
+  \hline
+    Op                       & $\left(\int_\Omega f\left(\phi(x),\nabla\phi(x),x\right) \varphi_i(x) dx\right)_i $                                           & $f$: getNonlinearity() \\
+    DiffOp                   & $\left(\int_\Omega \vec{f}\left(\phi(x),\nabla\phi(x),x\right)\cdot \nabla\varphi_i(x) dx\right)_i $                          & $\vec{f}$: getNonlinearity() \\
+    VectorOp                 & $\left(\int_\Omega \vec{f}\left(\vec\phi(x),\nabla\vec\phi(x),x\right)\cdot\vec\varphi_i(x) dx\right)_i $                     & $\vec{f}$: getNonlinearity() & $n_f$, $n_\phi$ are template parameters \\
+    VectorDiffOp             & $\left(\!\!\int_\Omega \!\!\vec{\vec{f}}\left(\vec\phi(x),\nabla\vec\phi(x),x\right):\nabla \vec\varphi_i(x) dx\!\!\right)_i$ & $\vec{\vec{f}}$:getNonlinearity() \\
+    IntegrationScalar        & $\int_\Omega f\left(\phi(x),\nabla\phi(x),x\right) dx$                                                                        & $f$: evaluateIntegrand() \\
+    IntegrationVector        & $\int_\Omega f\left(\vec\phi(x),\nabla\vec\phi(x),x\right) dx$                                                                & $f$: evaluateIntegrand() & $n_\phi$ is template parameter \\
+    IntegrationVectorGeneral & $\int_\Omega f\left(\vec\phi(x),\nabla\vec\phi(x),x\right) dx$                                                                & $f$: evaluateIntegrand() & $n_\phi\leq$domain dimension is variable \\
+  \hline
+\end{tabular}
+}
+}
+VectorFENonlinIntegrationVectorInterface can be used for vector valued integrands.

@@ -1,0 +1,204 @@
+% *******************************************************************************
+%     File of conventions for programming in the quocmesh-library.
+% *******************************************************************************
+
+The following rules apply to all modules, examples and tools. You should observe them in projects, too.
+
+\paragraph{class- and filenames}
+
+\begin{itemize}
+  \item class names: use \verb|CamelCase|, starting with upper case letter
+  \item member function: use \verb|camelCase|, starting with lower case letter
+  \item file name: use \verb|camelCase|, starting with lower case letter (exemption: start with upper case,
+        if first word is a proper name, e. g. \verb|ArmijoSearch.h|), \\
+        use only the following characters:
+        \begin{itemize}
+          \item upper and lower case letters (in particular no umlauts) (\texttt{a..z, A..Z})
+          \item digits (\texttt{0..9})
+          \item underscore and hyphen (\texttt{\_,-})
+          \item periods/full stops (\texttt{.})
+        \end{itemize}
+  \item please use correct English names
+  \item avoid name conflicts with system header files (e. g. stl headers)
+  \item include each new module header file to corresponding selfTest
+\end{itemize}
+
+
+\paragraph{templates}
+
+\begin{itemize}
+  \item template parameters: must contain lowercase letters (\verb|realType| and \verb|RealType|
+        are okay, but \verb|REAL| is not)
+  \item Naming standard for re-exported template parameters: \\
+        \verb|template< typename _DataType > ... typedef _DataType DataType;|
+  \item For template parameters to be reexported: use \verb|_SomeType| as template parameter and
+        \verb|public typedef _SomeType SomeType|
+  \item If declaration and implementation are separate, the template parameters must have the
+        same name in both cases, that is \verb|_SomeType|. In the implementation, both versions
+        may be used.
+\end{itemize}
+
+
+\paragraph{preprocessor directives}
+
+\begin{itemize}
+    \item after \verb|#define|, USE CAPITAL LETTERS
+          \begin{verbatim}
+#ifndef __BLA_H
+#define __BLA_H
+// contents of bla.h
+#endif         \end{verbatim}
+    \item \#ifdef and similar preprocessor directives are not indented.
+    \item include guards must be used in all headers, the format is \verb|__AOL_H|
+    \item openmp critical sections should be named according to the scheme
+\begin{verbatim}
+namespace_class_{method,other useful identifier}[_number, if needed]
+\end{verbatim}
+      e.g.
+\begin{verbatim}
+#pragma omp critical (aol_RandomGenerator_getNextRnd)
+\end{verbatim}
+\end{itemize}
+
+
+\paragraph{structure of externals}
+
+\begin{itemize}
+\item standard externals should contain
+  \begin{itemize}
+  \item \texttt{makefile.local} that sets include and link paths
+  \item provide an include header, marked as a system header
+\begin{verbatim}
+#ifdef __GNUC__
+#pragma GCC system_header
+#endif
+\end{verbatim}
+    to prevent compiler warnings for external code
+  \item a short description
+  \end{itemize}
+\item if the external is selected in
+  \texttt{makefile.selection.default}, define
+  \texttt{USE$\_$EXTERNAL$\_$...} is set automatically.
+\item nonstandard externals may contain (small amounts of) code that
+  is compiled automatically (if necessary) by the make mechanism
+  (\texttt{go} and \texttt{clean} scripts) or by an appropriate visual
+  c++ project
+\end{itemize}
+
+\paragraph{using externals}
+\begin{itemize}
+\item all modules (except for those obviously fully depending on an
+  external) must compile without the external being used
+\item Programs that use external code also have to compile if the
+  corresponding external is switched off. The executables should then
+  give a useful and informative error message like ''This program
+  can't be used without (\textit{corresponding external})''. To achieve
+  this, enclose your header and cpp-files in the following
+  ifdef-construction (external is GRAPE in this example):
+\begin{verbatim}
+#ifdef USE_EXTERNAL_GRAPE
+    ... (code that uses externals) ...
+#endif
+\end{verbatim}
+In case of executables add the follwing else-part (or a similar one):
+\begin{verbatim}
+#ifdef USE_EXTERNAL_GRAPE
+  ... (code that uses externals) ...
+#else
+  int main ( int, char** ) {
+    cerr << "Without grape external, this program is useless" << endl;
+    return ( 0 ) ;
+  }
+#endif
+\end{verbatim}
+\end{itemize}
+
+
+\paragraph{style (indentation, spaces~\ldots)}
+
+\begin{itemize}
+    \item 2 spaces are used for indentation (no tabs, not 4 spaces etc.)
+    \item preprocessor directives are not indented at all.
+    \item \texttt{public:} and similar are not indented relative to the class.
+          In both cases, that is the current astyle standard.
+    \item brackets (placement in lines and spacing around brackets) are used according to the following scheme:
+          \begin{verbatim}
+dummy_method ( aol::Vector<RealType> &vec, RealType factor ) {
+  for ( int i = 0; i < vec.size(); ++i ) {
+    vec[i] = factor * vec[i];
+  }
+}              \end{verbatim}
+          and can be enforced automatically by using util/indent which in turn uses astyle
+\end{itemize}
+
+
+\paragraph{Name convention for methods that import or export data, e. g. aol::Mat A, B inversion (same for transposition etc.)}
+
+\begin{itemize}
+  \item \texttt{void A.invert()}: writes $A = A^{-1}$
+  \item \texttt{B = A.inverse()}: compute and return inverse of $A$, do not modify $A$
+  \item \texttt{A.invertFrom(B)}: $A = B^{-1}$, $B$ unmodified
+  \item \texttt{A.invertTo(B)}: $B = A^{-1}$, $A$ unmodified
+\end{itemize}
+
+
+\paragraph{miscellaneous}
+
+\begin{itemize}
+  \item comments have to be written in english (except in your own projects, there you can do whatever you want)
+  \item use special characters only in your own projects and only on your own risk
+\end{itemize}
+
+
+\paragraph{data sets}
+
+\begin{itemize}
+  \item don't commit any data sets (images etc.) except very small data sets for examples or selfTests
+        (keep those in directory \texttt{examples/testdata}, files here must be sufficiently free to be usable under quoc license)
+\end{itemize}
+
+
+
+\paragraph{No convention on~\ldots}
+
+\begin{itemize}
+  \item the position of member variables, they may be at the beginning or at the end of a class
+  \item No general rule on whether implementation should be inside or outside class definition.
+\end{itemize}
+
+
+\paragraph{Rules for subversion}
+
+\begin{itemize}
+  \item Moving code and changing code (e. g. moving implementation out of class and changing it)
+        should be committed separately to allow diffing.
+  \item use svn:ignore to ignore files that will automatically occur when compiling and typical temp files of editors and IDEs,
+        not for personal temporary copies like aol.hold
+\end{itemize}
+
+
+\paragraph{Very special things}
+\begin{itemize}
+  \item use \texttt{aol::Abs} instead of \texttt{fabs}.
+        But: template specialization is necessary for unsigned data types when needed.
+  \item Instead of \texttt{M$\_$PI} the expressions \texttt{aol::PI} or
+        \texttt{aol::NumberTrait<RealType>::pi} should be used. Analogously for other mathematical
+        constants (if not available define own NumberTrait).
+  \item \texttt{apply(x, x)} is nowhere forbidden, but produces (mostly) unpredictable output.
+        Apply should check for this and throw exception or contain comment that \texttt{apply(x, x)}
+        works, we will not change this in all old apply methods now.
+  \item Use \texttt{for}-loops where possible, even simple things like \\
+        \texttt{a[0] = expression ( 0 ); a[1] = expression ( 1 )} \\
+        should be done in a \texttt{for}-loop.
+  \item In methods like \texttt{getMinValue()} or \texttt{getMaxValue()} don't initialize the
+        first value with $\pm$ infinity, but with \texttt{vector[0]} (otherwise, if the size of
+        the vector is $0$, it might happen that $\pm$ infinity is returned). \\
+        If it's not really really obvious that in no case anything can ever go wrong with the
+        \texttt{[]}-operator of the vector, use \texttt{get} and \texttt{set} (then bounds-checking
+        is applied in the debug-mode).
+  \item use \texttt{NON\_PARALLEL\_STATIC} if \texttt{static} variables should not be static when using
+        parallelization (due to conflicting write access), e.g.\ if \texttt{static} is only used for
+        performance reasons. If they always need to be static, prevent parallel write access.
+\end{itemize}
+
+

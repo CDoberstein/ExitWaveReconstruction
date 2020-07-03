@@ -1,0 +1,546 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%                 Chapter Templates, Traits, Interfaces, STL
+%                 written Marc Droske
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Templates, Traits, Interfaces, STL}
+
+\section{Generic (OO) programming concepts}
+
+\begin{itemize}
+\item Avoid code duplication.
+\item Represent independent concepts separately.
+\item Design your classes to be used as flexibly as possible.
+\item Problem: type flexibility, robustness \& efficiency
+\item \bfseries{templates} provide a mechanism for \emph{generic programming}
+\end{itemize}
+
+
+\section{Class parametrization via templates}
+Consider a simple class to story some \id{int}s:
+\begin{myverbatim}
+class int_array {
+  private:
+    int data[1000];
+  public:
+    int get( int i ) { ... }
+    void set( int i ) { ... }
+    // dot-product of this array and other array
+    int operator*( const int_array &other ) const { ... }
+};
+\end{myverbatim}
+
+Later, we want to have an array of \id{float}s, \id{double}s, \id{complex} numbers,
+\id{short[3]}s or other types (which can be classes) and specify a different length.
+
+
+Consider the following parametrization of class \id{array} with a type \id{T}:
+
+\begin{myverbatim}
+template <typename T>
+class array {
+  private:
+    T data[1000];
+  public:
+    T get( int i ) const { ... }
+    void set( int i, T v ) { ... }
+    T operator*( const array<T> &other ) const {
+      T dot=static_cast<T>(0);
+      for ( int i=0; i<1000; i++ ) {
+        dot += this->get( i ) * other.get( i );
+      }
+      return dot;
+    }
+};
+\end{myverbatim}
+
+
+\section{Instantiation}
+
+Instantiation of templated class is very simple:
+\begin{myverbatim}
+array<float> a, b;
+array<int> c, d;
+[...] // fill the arrays with really nice values.
+float dotf = a * b;
+int doti = c * d;
+\end{myverbatim}
+
+\begin{itemize}
+\item \id{array<A>} and \id{array<B>} are distinct types if and only if \id{A} and \id{B} are distinct types!
+\item \id{array} itself is not a class, but just a template of a class, which has to be parametrized by the type \id{T}.
+\end{itemize}
+
+
+
+\section{Parametrization by values}
+
+We now want the array to be able to store data of different sizes.
+\begin{myverbatim}
+template <typename T, int SIZE = 1000>
+class array {
+  private:
+    T data[ SIZE ];
+  public:
+    [...]
+    T operator*( const array<T,SIZE> &other ) const {
+      T dot=static_cast<T>(0);
+      for ( int i=0; i<SIZE; i++ ) {
+        dot += this->get( i ) * other.get( i );
+      }
+      return dot;
+    }
+};
+\end{myverbatim}
+
+{\bfseries{Template arguments have to be known at compile time.}}
+
+Again, the type of the templated class is determined
+by it's own type and all of it's template arguments..
+
+\begin{myverbatim}
+array<float,1000> a;
+array<float,1001> b;
+array<double,1000> c;
+float dot = a * A; // fails!
+float dot = a * B; // fails!
+
+typedef float MYTYPE;
+array<MYTYPE> d;
+
+float dot = a * d;
+// works.. typedefs and default args are resolved
+\end{myverbatim}
+
+
+
+\section{(Member) Function Templates}
+Allow functions to be passed parameters of various types:
+\begin{myverbatim}
+template <typename T>
+T sqr( const T& v ) { return v*v; }
+
+class A {
+  [...]
+  A operator*( const A& other ) const { [...]; }
+};
+
+A a;
+
+sqr( 4. );
+sqr( 2 );
+sqr( a ); // hooray!
+\end{myverbatim}
+
+or we want to have a class to fill some arrays..
+\begin{myverbatim}
+template <class T, int SIZE = 1000>
+class array {
+  [...];
+  T& operator[]( int i ) { return data[i]; }
+  const T& operator[]( int i ) const { return data[i]; }
+};
+
+template <typename ARR_TYPE>
+void fill_array( ARR_TYPE &a ) {
+  a[0] = 2.;  a[1] = 3.;  a[2] = 5.;  a[3] = 7.;  a[4] = 11.;
+}
+
+double d[5];
+array<float,5> f;
+fill_array( d ); // works..
+fill_array( f ); // works too.. ;)
+\end{myverbatim}
+
+
+
+\section{Template specializations}
+
+Maybe we want to define a special behaviour of the class for
+some special template arguments:
+
+\begin{myverbatim}
+template <int SIZE = 1000>
+class array<bool> {
+  private:
+    int data[ (SIZE / sizeof(int)) + (SIZE % sizeof(int) == 0) ? 0 : 1 ];
+  public:
+    bool get( int i ) const { /* fancy bitwise storage goes here */ };
+    void set( int i, bool T ) { [...] }
+};
+cerr << sizeof( array<float> ) << endl;
+// 1000 * sizeof(float);
+
+cerr << sizeof( array<bool> ) << endl;
+// 1000 / sizeof(int);
+\end{myverbatim}
+
+
+\section{Traits} Use template specializations to map compile-time types or values to
+other types or values.
+\begin{myverbatim}
+template <typename T> class avg_trait {  // default
+public:
+  typedef T AVG_TYPE;
+};
+
+template<> class avg_trait<int> {  // special behaviour
+public:
+  typedef float AVG_TYPE;
+};
+
+template <typename T, int SIZE = 1000>
+class array_with_average : public array<T,SIZE> {
+public:
+  avg_trait<T>::AVG_TYPE average( ) const { [...]; }
+};
+\end{myverbatim}
+
+
+\section{Type promoters with traits:}
+\begin{myverbatim}
+template<typename T1, typename T2>
+Vector<???> operator+(const Vector<T1> &, Vector<T2> &);
+\end{myverbatim}
+How to determine the return value?
+\begin{myverbatim}
+template <typename T1, typename T2>
+struct promote_trait { };  // empty..
+
+template <> struct promote_trait<int,float> {
+  typedef float T_promote;
+};
+template <> struct promote_trait<char,double> {
+  typedef double T_promote;
+};
+
+template<typename T1, typename T2>
+Vector<promote_trait<T1,T2>::T_promote>
+operator+(const Vector<T1> &, Vector<T2> &);
+\end{myverbatim}
+
+
+\section{Definition of member functions outside classes:}
+\begin{myverbatim}
+template <typename T>
+class A {
+public:
+  void foo( const T& ) const;
+};
+
+template <typename T>
+void A<T>::foo( const T& t ) const {
+  [...];
+}
+\end{myverbatim}
+It is possible to define templated member functions in \id{.cpp} files,
+but the compiler has to known for which types they have to be compiled.
+\begin{myverbatim}
+template class A<int>;
+template class A<float>;
+template class A<B>;
+\end{myverbatim}
+If a-priori list of template arguments is known, one should always define
+member functions in the header files! \\
+This also reduces the size of compiled object files, precompilation into a lib
+is not possible though.
+
+
+\section{Interfaces: Static vs. dynamic Polymorphism}
+
+Motivation
+\begin{enumerate}
+\item huge variety of libraries and special classes, each having
+advantages and disadvantages in different environments
+\item simplify problem-related programming by the spefication
+  of a high-level interface. the programmer who is implementing
+actual problems only has to know the interface, not the details
+about the different libraries
+\item Usually there is a significant loss of efficiency due to the interface,
+ due to wrapper functions, proxy-objects and structural differences.
+\end{enumerate}
+
+How can interfaces be designed efficiently and still be easy to use?
+\textbf{Interfaces: Static vs. dynamic Polymorphism} \\
+(cf. T. Veldhuizen, {\em Techniques for Scientific C++})\\
+{Dynamic Polymorphism:}
+\begin{myverbatim}
+template <typename T> class Matrix { //
+public:
+  virtual T operator( int i, int j ) const = 0 { };
+  virtual T frobeniusNorm( ) const { [..] // call get a lot of times; }
+  virtual T mult( const Vector<T> &arg, Vector<T> &dest );
+};
+
+template <typename T> class FullMatrix {
+public:
+  virtual T operator( int i, int j ) const { [...] };
+};
+
+template <typename T> class SymmetricMatrix {
+public:
+  virtual T operator( int i, int j ) const { [...] };
+};
+\end{myverbatim}
+
+Now we want to use the matrices dynamically..
+\begin{myverbatim}
+Matrix *matrices[5];
+matrices[0] = new FullMatrix<double>;
+matrices[1] = new SymmetricMatrix<double>;
+// etc.
+
+double sum_frob = 0;
+for (int i=0; i<5; i++ ) {
+  sum_frob += matrices[i]->frobeniusNorm();
+}
+\end{myverbatim}
+
+{This will be slow!!} the virtual function \id{operator( int i, int j )} will be called
+often, each time a pointer lookup is necessary. \\
+Resort: Implement the (virtual) function \id{frobeniusNorm} on all derived classes,
+but this involves to implement a lot of similar code..
+
+\section{Static polymorphism:} \textbf{engines}
+\begin{myverbatim}
+template <typename T>
+class FullMatrix_engine { // storage/get/set };
+template <typename T>
+class SymmetricMatrix_engine { // storage/get/set };
+
+template <T_engine>
+class Matrix {
+private:
+  T_engine engine;
+public:
+  [...]
+  T frobeniusNorm() const {
+    T r=0;
+    for ( ... ) { r += sqr( engine( i, j ) ); }
+  }
+};
+\end{myverbatim}
+
+\section{Static polymorphism: } \textbf{The Barton and Nackman trick}
+\begin{myverbatim}
+// we still want to put matrices into a container
+template <typename Imp>
+class A_Interface {
+protected:
+  Imp &asImp() { return static_cast<Imp&>( *this ); }
+  const Imp &asImp() const { return static_cast<const Imp&>( *this ); }
+public:
+  void foo( ) { asImp().foo(); }
+
+  void bar( ) { foo(); foo(); }
+};
+
+class A : public A_Interface<A> {
+public:
+  void foo( ) { // do something }
+};
+\end{myverbatim}
+
+
+\section{Static polymorphism: } \textbf{The Barton and Nackman trick}
+{\small
+\begin{myverbatim}
+// we still want to put matrices into a container
+template <typename T, typename Imp>
+class MatrixInterface {
+protected:
+  Imp &asImp() { return static_cast<Imp&>( *this ); }
+  const Imp &asImp() const { return static_cast<const Imp&>( *this ); }
+public:
+  T operator( int i, int j ) const { return asImp()( i, j ); }
+  T frobeniusNorm( ) const { return asImp().frobeniusNorm(); }
+};
+
+template <typename T, typename Imp>
+class MatrixDefault : MatrixInterface<T, Imp>{
+  T frobeniusNorm( ) const {
+    T r=0;
+    for ( ... ) { r += sqr((*this)( i, j ))); }
+  }
+};
+\end{myverbatim}
+
+Actual implementations:
+\begin{myverbatim}
+template <typename T>
+class FullMatrix : public MatrixDefault<T,FullMatrix<T> > {
+  T data[1000][1000];
+public:
+  T operator( int i, int j ) const { return data[i][j]; }
+};
+
+template <typename T>
+class SymmetricMatrix : public MatrixDefault<T,FullMatrix<T> > {
+public:
+  T operator( int i, int j ) const { [..] }
+  T frobeniusNorm( ) const { [..] // do some tricks here.. ; }
+};
+
+\end{myverbatim}
+}
+
+
+\section{Advantages}
+\begin{enumerate}
+\item Interface is clearly defined and more transparent.
+\item No instanciations of auxiliary classes necessary.
+\item Allows more conventional inheritance hierarchy.
+\item Methods can be selectively overloaded in derived classes, i.~e. it is easy to
+implement and change standard behaviour in a larger hierarchy.
+\end{enumerate}
+
+\textbf{Warning: Typical error} If the member function of the derived class is not exactly of the
+same type (e.~g. forgot to declare as \id{const}), the call to
+\id{asImp().function()} get's lost in infinite recursions..
+
+
+\subsection{Rules of thumb}
+
+\begin{itemize}
+\item \id{virtual} functions \textbf{can} be slow, but the difference to inlined functions is miniscule. {When the function body is longer than a few lines, the difference may not be noticed.} Then dynamic polymorphism should be chosen over templated polymorphism for the sake of maintainability and lower compilation time.
+\item What parts can I implement with static polymorphism and which not? \\
+Static polymorphism has it's limitations. Everything that is known to you, the programmer, when you write the program, i.~e., at the stage of compile time, can be implemented with static polymorphism. Not more!
+\end{itemize}
+
+
+\section{The standard template library (STL)}
+
+
+\begin{itemize}
+\item Library of classes, algorithms and iterators for the generic storage and processing of instances.
+\item It is entirely parametrizable by templates.
+\item The heart of the STL are container classes, i.~e., classes to dynamically manage sets of objects.
+\end{itemize}
+Example:
+\begin{myverbatim}
+// create a vector of 1000 integers
+vector<int> vec_of_ints( 1000 );
+vec_of_ints[0] = 2;
+vec_of_ints[1] = 3;
+vec_of_ints[2] = vec_of_ints[0] + vec_of_ints[1];
+\end{myverbatim}
+
+
+\subsection{STL concepts}
+\begin{itemize}
+\item \textbf{storage classes/containers}. The main container classes in the STL are \id{vector}, \id{list}, \id{deque}, \id{set}, \id{map}, \id{hash\_set}, \id{hash\_map}, \id{stack}, etc. They are parametrized by the type of objects they should store and possibly by a memory manager.
+\item \textbf{iterators} provide easy to use functional for the sequential traversal of the elements of a container or a subset. Iterators represent the method of choice for accessing elements of containers.
+\item \textbf{algorithms}. The STL contains a variety of auxiliary algorithms which are often based on iterators, such as sorting routines, search, reversal, merging, splicing, heap operations, filling, shuffling etc. etc. The STL is considered state-of-the-art with respect to efficiency and flexibility and should be used wherever it is applicable.
+\end{itemize}
+
+
+\centerline{\large Overview on container classes}
+\begin{itemize}
+\item \textbf{vectors} represent linearly organized sequences of objects, which provides (unlike most others) \textbf{random access} to it's elements.
+\item \textbf{lists} are doubly-linked lists, i.~e., access to the predecessor and successor, as well as insertion at arbitrary positions is an O(1) operation.
+\item \textbf{deque} is like a vector but supports constant time insertion at the beginning.
+\item \textbf{sets} represent the unstructered storage of (unique) elements. It is well suited for set operations, like $\cap$, $\cup$, $\setminus$. Sets are always sorted.
+\item \textbf{maps} are parametrized by the types \id{Key} and \id{Data}, which can be understood as domain resp. range-types of a mathematical mapping. Keys are unique.
+\item \textbf{stacks} provide a {\em last-in-first-out} (LIFO) in constant time class.
+\item \textbf{hash\_sets} and \textbf{hash\_maps} are principally like \textbf{sets}, \textbf{maps}, but thanks to the additional specification of a hashing-function,
+access to elements is in constant time (depending on the choice of the hash-function).
+
+\item \textbf{(hash\_)multisets} and \textbf{(hash\_)multimaps} differ from the non-multi variants by the fact that they can contain multiple elements being equal, i.~e., elements are mapped to subsets of the range set, not atoms.
+
+\item \textbf{string} classes.
+
+\end{itemize}
+
+
+\centerline{\large Iterators}
+
+Sequential traversal of half-open intervals: \id{[begin,.........,end)}
+\begin{itemize}
+\item \textbf{Input iterators} read-access, but not necessarily write-access.
+\item \textbf{Ouput iterators} write-access, but not necessarily read-access.
+\item \textbf{Forward iterators} traversal from begin to end
+\item \textbf{Reverse iterators} traversal in reverse order
+\item \textbf{Bidirectonal iterators} traversal in both directions possible.
+\item \textbf{Random-Access iterators} also allow index arithmetic.
+
+\end{itemize}
+
+
+\subsection{list-example}
+
+\begin{myverbatim}
+template <typename T_cont>
+void dump( const T_cont& c ) {
+  for ( typename T_cont::const_iterator it=c.begin();
+    it!=c.end(); ++it ) { cerr << *it << " "; }
+  cerr << endl;
+}
+
+list<int> l;
+l.push_back( 8 ); l.push_back( 2 ); l.push_back( 6 );
+dump( l );
+list<int>::iterator it=l.begin();
+l.insert( ++++it, 1 ); dump( l );
+l.sort( );             dump( l );
+Output:
+8 2 6
+8 2 1 6
+1 2 6 8
+\end{myverbatim}
+
+\subsection{map-example}
+{\small
+\begin{myverbatim}
+map<const char*, int, ltstr> months;
+months["january"] = 31;
+[...]
+months["december"] = 31;
+
+cout << "june -> " << months["june"] << endl;
+map<const char*, int, ltstr>::iterator cur  = months.find("june");
+map<const char*, int, ltstr>::iterator prev = cur;
+map<const char*, int, ltstr>::iterator next = cur;
+++next;
+--prev;
+cout << "Previous (alphabetically) is " << (*prev).first << endl;
+cout << "Next (alphabetically) is " << (*next).first << endl;
+\end{myverbatim}
+Output:
+\begin{myverbatim}
+june -> 30
+Previous (alphabetically) is july
+Next (alphabetically) is march
+\end{myverbatim}
+}
+
+
+\subsection{Memory management}
+
+The STL has efficient built-in memory-management routines, which can
+be customized (rarely-necessary).
+
+Actually reserved memory may be larger than the amount needed by
+the stored elements.
+\id{vector} provides various member functions.
+\begin{itemize}
+\item \id{size( )} returns actual length of vector.
+\item \id{capacity( )} returns how many elements fit into the reserved
+memory. larger or equal than size.
+\item \id{reserve( size\_t n )} ensures there is enough memory for \id{n} elements.
+\item \id{resize( n, T t=T() )} resizes the vector such that length becomes \id{n}
+\end{itemize}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "manual"
+%%% End:

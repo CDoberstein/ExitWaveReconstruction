@@ -1,0 +1,103 @@
+%   Diese Dokumentation soll Stueck fuer Stueck aufgebaut werden, um die fruehere
+%   manual.tex irgendwann ersetzen zu koennen.
+%
+%   Das Unternehmen wurde begonnen im Jahre des Herrn 2008, im dritten Jahr
+%   des Pontifikats Benedikts XVI. Moege eine glueckliche Entwicklung dieser
+%   unserer Erde ihm eine glueckliche Zukunft schenken.
+%
+%
+% General properties
+\documentclass [twoside, a4paper, 12pt] {scrbook}
+\addtokomafont{paragraph}{\rmfamily}
+
+\usepackage {graphicx}
+
+\usepackage {amssymb, latexsym}
+\usepackage {amsmath}
+\usepackage {color}
+\usepackage {dsfont}
+%\usepackage [english] {babel}
+\usepackage{german}
+\usepackage[latin1]{inputenc}
+\usepackage {times}
+
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{enumerate}
+
+\usepackage {listings}
+\lstset {language=C++, tabsize=2,
+         keywordstyle=\color{rot}\bfseries,
+         basicstyle=\ttfamily\small,
+         commentstyle=\rmfamily\itshape,
+         aboveskip=1cm,
+         numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=0.5cm,
+         emph={Vector, Vec2, aol, qc, bm,
+               list,
+               std, vector,string, map,istream, ostream, Op, FILE, String, quoc,
+               Exception,},
+         emphstyle=\color{blau}\bfseries,
+         emph={[2]IndexType, RangeType, DomainType,
+               DataType, IndexType,},
+         emphstyle={[2]\color{gruen}\bfseries}}
+
+% Page layout
+\typearea [12mm] {13}
+\pagestyle {headings}
+\frenchspacing
+\setlength {\parindent} {0mm}
+
+\definecolor {rot} {rgb} {0.4, 0, 0}
+\definecolor {blau} {rgb} {0, 0, 0.4}
+\definecolor {gruen} {rgb} {0, 0.4, 0}
+
+\newcommand		\R			{\mathds {R}}
+\newcommand		\id [1]		{{\lstinline$#1$}}
+\renewcommand	\div		{\mathrm{div}}
+\newcommand		\missing [1]{\textbf{[missing:}{#1} \textbf{]}}
+\newcommand		\dx			{\,\mathrm{d}x}
+\newcommand		\V			{{\mathcal V}}
+\renewcommand	\phi		{\varphi}
+
+\newcommand \cls [1] {\framebox(3,1.5){#1}}
+\newcommand \clsklein [1] {\framebox(3,1){#1}}
+\setlength{\unitlength}{8mm}
+
+\DeclareMathOperator \Span {span}
+
+\lstnewenvironment {myverbatim} {} {}
+
+\newcommand \anmerkung [1] {{\bfseries \color{red} [#1]}}
+
+\begin {document}
+
+
+\chapter*{Vorwort und Gliederung}
+% Autor Stefan W. von Deylen
+
+Die QuocMesh-Bibliothek ist das Werk derzeitiger und ehemaliger Mitarbeiter
+der Arbeitsgruppe Prof. Martin Rumpf, Bonn (fr"uher Duisburg). Sie ist eine
+Klassenbibliothek zur Numerischen Simulation mithilfe Finiter Elemente,
+vor allem auf 2D- und 3D-Gittern mit quadratischen bzw. w"urfelf"ormigen
+Elementen (\textbf{Qu}adtrees bzw. \textbf{Oc}trees, daher der Name).
+
+Die Mitarbeiter an der Bibliothek werden im folgenden als "`das QuocMesh-%
+Kollektiv"' referenziert.
+
+Diese Anleitung versucht, gleichzeitig vielen Herren zu dienen und alles in
+einem zu sein: Einf"uhrung, Nachschlagewerk, Kurzreferenz f"ur die wichtigsten
+Funktionen. F"ur einen Ersteinstieg ist es daher nicht empfehlenswert,
+ganz vorn anzufangen. Hierf"ur ist das Kapitel \ref{sec:Schnelleinstieg} gedacht.
+
+\tableofcontents
+
+\include{01_Einfuehrung}
+\include{02_Funktionalitaet}
+\include{03_BiblGliederung}
+\include{04_Schnelleinstieg}
+\include{05_AllgMathematik}
+\include{06_FiniteElemente}
+\include{07_Gitterarten}
+\include{08_ToolsExternals}
+
+\end{document}

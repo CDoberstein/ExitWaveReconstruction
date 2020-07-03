@@ -1,0 +1,93 @@
+% General properties
+\documentclass [twoside, a4paper, 12pt] {scrbook}
+\usepackage {graphicx}
+
+\usepackage {amssymb, latexsym}
+\usepackage {amsmath}
+\usepackage {color}
+\usepackage {dsfont}
+\usepackage [english] {babel}
+\usepackage {times}
+
+\usepackage {listings}
+\lstset {language=C++, tabsize=2,
+         keywordstyle=\color{rot}\bfseries,
+         basicstyle=\ttfamily\small,
+         commentstyle=\rmfamily\itshape,
+         aboveskip=1cm,
+         numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=0.5cm,
+         emph={Segment, Particle, Boundary, Vector, Vec2, aol, qc, bm,
+               ReferenceSegment, ParaParticle, RectParticle, list, AllSegmentIterator, ConstAllSegmentIterator, PipingIterator,
+               ParaSegment, ConstParaSegment, ParaSegmentIterator, ConstParaSegmentIterator,
+               std, vector, RectSegment, ConstRectSegment, RectSegmentIterator, ConstRectSegmentIterator
+               QRDecomposeHouseholderMatrix, QRInverse, Matrix, string, map, TypePtr,
+               ParameterParser, istream, ostream, iterator, IntegralOperator, FullMatrix,
+               SingleLayerPotential, LocalOperator, FEOpInterface, PanelCluster, Op,
+               ParticleTree, PanelClusteringOperator, ConstLeafIterator, ConstSegmentIteratorType, ConstClusterIterator,
+               File, Circle, Rectangle, Polygon, Complex, Date, FILE, String, Student, PhDStudent, Professor, Element,
+               Point, Triangle, AlignedQuadrilateral, Square, DiscreteFunction, Grid, quoc,
+               Exception, IOException, ParameterRangeException, FileFormatMismatch, StrItInterface,
+               StringIterator, StringIteratorEndProxy, SurfMesh, istringstream},
+         emphstyle=\color{blau}\bfseries,
+         emph={[2]Implementation, IteratorType, ConstIteratorType, SegmentType, ConstSegmentType,
+               DataType, ParticleType, IndexType, RangeType, DomainType,
+               BoundaryType, ParticleIteratorType, SegmentIteratorType, _DataType, _IndexType, LocalOperatorType, _ParticleType},
+         emphstyle={[2]\color{gruen}\bfseries}}
+
+% Page layout
+\typearea [12mm] {13}
+\pagestyle {headings}
+\frenchspacing
+\setlength {\parindent} {0mm}
+
+\definecolor {rot} {rgb} {0.4, 0, 0}
+\definecolor {blau} {rgb} {0, 0, 0.4}
+\definecolor {gruen} {rgb} {0, 0.4, 0}
+
+\newcommand {\R} {\mathds {R}}
+\newcommand {\id} [1] {{\lstinline$#1$}}
+\renewcommand {\div} {\mathrm{div}}
+\newcommand{\missing}[1]{\textbf{[missing:}{#1} \textbf{]}}
+
+\lstnewenvironment {myverbatim} {} {}
+
+\begin {document}
+
+\selectlanguage {english}
+
+\title {Using and Programming the QuocMesh Library}
+\author {QuocMesh Collective}
+
+\maketitle
+
+\tableofcontents
+
+\chapter{Source Code Conventions}
+\input{QuocConventions}
+
+\InputIfFileExists{DocOOProgramming.tex}{}{}
+
+\input{DocTemplates.tex}
+
+\input{DocFEOpInterface.tex}
+
+\InputIfFileExists{DocSelectedProblems.tex}{}{}
+
+\input{DocBoundaryElements.tex}
+
+\InputIfFileExists{DocNewtonMethod.tex}{}{}
+
+\InputIfFileExists{DocTimestepping.tex}{}{}
+
+\InputIfFileExists{DocGradientflow.tex}{}{}
+
+\input{DocSolver.tex}
+
+\InputIfFileExists{DocDTGrids.tex}{}{}
+
+\end {document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master:
+%%% End:

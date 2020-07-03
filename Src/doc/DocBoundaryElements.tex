@@ -1,0 +1,430 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%                 Chapter "Boundary Element Methods"
+%                 written by Martin Lenz
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\chapter {Boundary Element Methods}
+
+\section {Overview}
+
+Framework for Boundary Element Methods in 2D, Namespace \lstinline$bm$
+
+\begin {itemize}
+\item Boundary Discretization\\
+(framework, polygons, rectangles)
+\item Boundary Integral Operators\\
+(laplacian, elasticity)
+\item Utilities
+\end {itemize}
+
+\section {Model Problem}
+
+Consider a harmonic function $u$, i.e. $\Delta u = 0$ on $\Omega$.\\
+Let $\psi_y (x) = -\frac{1}{2\pi }\ln \left| x-y\right|$ be the fundamental solution to the Laplacian in $\R^2$ centered at $y$.
+Now we have for $y \in \partial \Omega$ the boundary integral equation ($\nu$ the outer normal)
+\[ \frac {1}{2} u(y) = \int_{\partial \Omega} u(x) \partial_\nu \psi_y (x) - \partial_\nu u(x) \psi_y(x) \, ds_x \,, \]
+that relates Dirichlet and Neumann boundary conditions.
+
+This allows us to solve boundary value problems by considering an integral equation only on the boundary.
+
+\section {Boundary Discretization}
+
+Consider Integral Equations of the type
+\[ (K u)(y) = f(y) \,, \qquad K u = \int_\Gamma u(x) \psi_y(x) \, ds_x \]
+with some integral kernel $\psi_y$ that is usually nonlocal and
+possibly singular at $y \in \Gamma$.
+
+Ansatz: Approximate $u$ in some basis: $u (x) = \sum_j u_j \phi_j (x)$. Choose some points
+$y_i \in \Gamma$, where we will assume the integral equation to be solved exactly. This yields
+a linear system that is to be solved:
+\[ \sum_j K_{ij} u_j = f(y_i) \,, \qquad K_{ij} = \int_\Gamma \phi_j (x) \psi_{y_i} (x) \, ds_x \]
+
+\subsection {Abstract Framework}
+
+For the target application, the boundary consists of numerous closed fragments.
+
+So basic building block is a \lstinline$Particle$, i.e. a closed part of the boundary.
+
+Particles are assumed to be polygons, that means one can iterate through the segments.
+
+The set of all particles is organized in a list.
+
+
+
+Particles have Iterators over segments\\
+Barton--Nackman Interface, file \lstinline$particle.h$
+
+\begin{myverbatim}
+template <class Implementation, class IteratorType,
+ class ConstIteratorType, class SegmentType,
+ class ConstSegmentType, class DataType>
+  class Particle {
+  public:
+    IteratorType beginSegment ();
+    IteratorType endSegment ();
+    ConstIteratorType beginSegment () const;
+    ConstIteratorType endSegment () const;
+    int getNumberOfSegments () const;
+    void getLengths (Vector<DataType>& lengths) const;
+    // ...
+}
+\end{myverbatim}
+
+
+
+General segment Interface, file \lstinline$segment.h$
+
+\begin{myverbatim}
+template <class Implementation, class DataType>
+  class Segment {
+  public:
+    aol::Vec2<DataType> getStart () const;
+    aol::Vec2<DataType> getEnd () const;
+    aol::Vec2<DataType> getDirection () const;
+    aol::Vec2<DataType> getNormal () const;
+    DataType getLength () const;
+}
+\end{myverbatim}
+
+
+
+Usually one wants to store the real information in the particles.
+Segments only contain a reference to a particle and an index. Most basic operations (including iterating
+over them) are quite easy and efficient.
+
+\begin{myverbatim}
+template <class Implementation, class ParticleType>
+  class ReferenceSegment
+  : public Segment<Implementation,
+   typename ParticleType::DataType> {
+  public:
+    typedef typename ParticleType::IndexType IndexType;
+    bool operator == (const ReferenceSegment& segment) const;
+    bool isFollowedBy (const ReferenceSegment& segment) const;
+  protected:
+    ParticleType* _particle;
+    IndexType _index;
+}
+\end{myverbatim}
+
+
+
+Boundary is a list of particles, file \lstinline$boundary.h$
+
+\begin{myverbatim}
+template <class ParticleType>
+  class Boundary
+  : public list<ParticleType> {
+  public:
+    typedef typename ParticleType::DataType DataType;
+    AllSegmentIterator<ParticleType> beginSegment ();
+    AllSegmentIterator<ParticleType> endSegment ();
+    ConstAllSegmentIterator<ParticleType> beginSegment () const;
+    ConstAllSegmentIterator<ParticleType> endSegment () const;
+    int getNumberOfSegments () const;
+    void getLengths (Vector<DataType>& lengths) const;
+    // ...
+}
+\end{myverbatim}
+
+
+
+The segment iterators on the boundary iterate over the particles, then over the segments
+within. For this general concept of nested iterators, there is a utility class. Due to templatization, this is abstract
+with respect to the const-ness of segments.
+
+\begin{myverbatim}
+template <class BoundaryType, class ParticleIteratorType,
+ class SegmentIteratorType, class SegmentType>
+  class PipingIterator {
+  public:
+    // Iterator interface
+
+  protected:
+    ParticleIteratorType _particleBegin,
+                         _particleEnd, _particleCurrent;
+    SegmentIteratorType _segmentBegin,
+                        _segmentEnd, _segmentCurrent;
+}
+\end{myverbatim}
+
+
+
+Example: Implementation of \lstinline$PipingIterator::operator++$
+
+\begin{myverbatim}
+  template <...>
+    inline PipingIterator<...>& PipingIterator<...>::operator ++ ()
+    {
+      ++_segmentCurrent;
+      if (_segmentCurrent == _segmentEnd) {
+        ++_particleCurrent;
+        updateSegment (false);
+      }
+
+      return *this;
+    }
+\end{myverbatim}
+
+
+
+\begin{myverbatim}
+  // Update segment iterators after particle changed
+  template <...>
+    inline void PipingIterator<...>::updateSegment (bool end)
+    {
+      if (_particleCurrent == _particleEnd) return;
+
+      _segmentBegin = _particleCurrent->beginSegment ();
+      _segmentEnd = _particleCurrent->endSegment ();
+      _segmentCurrent = end ? _segmentEnd : _segmentBegin;
+    }
+\end{myverbatim}
+
+
+
+Implementation of \lstinline$AllSegmentIterator$ and \lstinline$ConstAllSegmentIterator$
+is now trivial with almost no code:
+
+\begin{myverbatim}
+template <class ParticleType>
+  class AllSegmentIterator
+  : public PipingIterator<Boundary<ParticleType>,
+   typename Boundary<ParticleType>::iterator,
+   typename ParticleType::SegmentIteratorType,
+   typename ParticleType::SegmentType> {
+  public:
+    typedef typename ParticleType::SegmentType SegmentType;
+    SegmentType& operator * () {
+      return *_segmentCurrent;
+    }
+}
+\end{myverbatim}
+
+\subsection {General Implementation: Polygons}
+
+The particle contains a list of points and
+some interface functions. File \lstinline$parametric.h$
+
+\begin{myverbatim}
+template <class _DataType = double, class _IndexType = int>
+  class ParaParticle
+  : public Particle<ParaParticle<_DataType,_IndexType>,
+   ParaSegmentIterator<_DataType,_IndexType>,
+   ConstParaSegmentIterator<_DataType,_IndexType>,
+   ParaSegment<_DataType,_IndexType>,
+   ConstParaSegment<_DataType,_IndexType>,_DataType> {
+   public:
+     aol::Vec2<DataType>& getPoint (IndexType index);
+   private:
+     std::vector<aol::Vec2<DataType> > _points;
+}
+\end{myverbatim}
+
+
+
+The \lstinline$ParaSegment$ class must contain the code for the
+\lstinline$Segment$ interface using the list of points.
+
+\begin{myverbatim}
+template <class _DataType = double, class IndexType = int>
+  class ParaSegment
+  : public ReferenceSegment<ParaSegment<_DataType,IndexType>,
+   ParaParticle<_DataType,IndexType> > {
+  protected:
+    void updatePoints ()
+    {
+      _start = _particle->getPoint (_index);
+      _end = _particle->getPoint (_index + 1);
+    }
+}
+\end{myverbatim}
+
+\subsection {Space- and Time-Optimized Implementation: Rectangles}
+
+A rectangle needs only to store two points. File \lstinline$rectangle.h$
+
+\begin{myverbatim}
+template <class _DataType = double>
+  class RectParticle
+  : public Particle<RectParticle<_DataType>,
+   RectSegmentIterator<_DataType>,
+   ConstRectSegmentIterator<_DataType>,
+   RectSegment<_DataType>,
+   ConstRectSegment<_DataType>,_DataType> {
+  private:
+    aol::Vec2<DataType> _lowerLeft, _upperRight;
+}
+\end{myverbatim}
+
+
+
+\begin{myverbatim}
+template <class DataType>
+void RectSegment<DataType>::updatePoints () {
+  aol::Vec2<DataType> ll = _particle->getLowerLeft ();
+  aol::Vec2<DataType> ur = _particle->getUpperRight ();
+
+  DataType top = ur.y (), left = ll.x ();
+  DataType bottom = ll.y (), right = ur.x ();
+
+  switch (_index) {
+  case TOP:
+    _start = aol::Vec2<DataType> (right, top);
+    _end = aol::Vec2<DataType> (left, top);
+    break;
+  // ...
+  }
+}
+\end{myverbatim}
+
+\section {Boundary Integral Operators}
+
+Discrete Integral operators are full matrices, constructed with some\\
+\lstinline$LocalOperatorType$
+that defines the evaluation of the integral of the kernel and some basis function:
+\[ A_{ij} = \int_\Gamma \psi_{y_i} (x) \phi_j (x) \, ds_x \]
+
+\begin{myverbatim}
+template <class LocalOperatorType>
+  class IntegralOperator
+  : public aol::FullMatrix<typename LocalOperatorType
+                           ::ParticleType::DataType> {
+  IntegralOperator (const LocalOperatorType& localOp,
+                    const Boundary<typename LocalOperatorType
+                                   ::ParticleType>& boundary);
+}
+\end{myverbatim}
+
+\subsection {Concrete Operators}
+
+Our ansatz is based on integrating the kernel explicitly, so that we must provide
+the kernel function itself and the analytical integrals needed for the matrix construction.
+The basic local operator considers piecewise constant ansatz functions.
+
+\begin{myverbatim}
+template <class _ParticleType>
+  class SingleLayerPotential
+  : public LocalOperator<SingleLayerPotential<_ParticleType>,
+                         _ParticleType> {
+
+  public:
+    typedef _ParticleType ParticleType;
+    typedef typename ParticleType::DataType DataType;
+    typedef typename ParticleType::ConstSegmentType
+                                   ConstSegmentType;
+
+    using LocalOperator<...>::evaluate;
+    using LocalOperator<...>::evaluateLocally;
+
+    DataType evaluate (aol::Vec2<DataType> point,
+                       aol::Vec2<DataType> center) const;
+    DataType evaluateLocally (const ConstSegmentType& integrate,
+                              const aol::Vec2<DataType>& evaluate,
+                              bool isstart, bool isinterior, bool isend) const;
+  };
+\end{myverbatim}
+
+\lstinline$evaluate (p, c)$ return $\psi_c(p)$
+
+\lstinline$evaluateLocally (i, e, ...)$ returns $\int_\Gamma \psi_{e} (x) \phi_i (x) \, ds_s$, where $\psi_e$ is centered at the middle of the segment $e$,
+$\phi_i$ is the characteristic function of the segment $i$ (which then is obviously the integrational domain), and the bools have to be set appropriately
+when the singularity of $\psi_e$ is somewhere on $i$.
+
+
+
+There are other types of operators for piecewise linear ansatz functions and for different types of integral kernels.
+
+\begin {itemize}
+
+\item Single layer, double layer, and hypersingular operator
+
+\item Laplacian and anisotropic elasticity
+
+\item Piecewise constant and linear ansatz functions
+
+\end {itemize}
+
+\section {Utilities}
+
+\subsection {Parameter Parser}
+
+Parser for parameter files of the following type
+\begin{myverbatim}
+int     numerOfSteps  100
+double  tau           1E-3
+string  filename      data
+bool    doit          1
+\end{myverbatim}
+
+Extensible to other types, by simply provinding an appropriate \lstinline$operator >>$
+and adding one line to \lstinline$ParameterParser::read$
+\begin{myverbatim}
+map <string,TypePtr> types;
+types["bool"]                  = &typeid (bool);
+types["aol::Vector<double>"]   = &typeid (aol::Vector<double>);
+\end{myverbatim}
+
+
+
+Usage in main program is simple: With no runtime argument, the parser reads from
+the default file \lstinline$parameter$, otherwise from the file with the provided filename.
+
+\begin {myverbatim}
+int main (int argc, char* argv[])
+{
+  aol::ParameterParser parameter (argc, argv);
+  double tau;
+  parameter.get ("tau", tau);
+}
+\end{myverbatim}
+
+On initialization, the type of variables is identified by the string in the \lstinline$types$ map,
+and the value is read to a string.
+Then \lstinline$ParameterParser::get$ is overloaded for any type. It ensures that it is called exactly
+for the right type by a \lstinline$typeid$ comparison and the converts the data via \lstinline$operator >>$.
+
+\subsection {IO Utilities}
+
+Functions for binary IO with streams\\
+(encapsulates some ugly casting), file \lstinline$genmesh.h$
+
+\begin{myverbatim}
+//! Binary input from stream,
+//! nothing is done about byte order
+template <class DataType>
+  void readbinary (istream& is, DataType& data);
+
+//! Binary output to stream,
+//! nothing is done about byte order
+template <class DataType>
+  void writebinary (ostream& os, const DataType& data);
+\end{myverbatim}
+
+\subsection {Memory Usage}
+
+For space complexity estimates: memory usage of running program\\
+(adds the right values of the \lstinline$mallinfo$ structure), file \lstinline$genmesh.h$
+
+\begin{myverbatim}
+//! Returns number of bytes used by program
+int memusage ();
+\end{myverbatim}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "manual"
+%%% End:

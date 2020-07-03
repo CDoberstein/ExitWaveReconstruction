@@ -1,0 +1,336 @@
+\chapter{Allgemeine Mathematik}
+
+\anmerkung{Default-Einstellung f"ur alle Container ist deep copy! Ausnahmen nennen:
+DiscreteFunction, auto\_container auf Wunsch.}\\
+\anmerkung{Alle folgenden Punkte im Schema: Welche gibt es, Unterschiede, wof"ur jeweils
+gedacht/zu benutzen, wie zu finden/einzubinden}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Vektoren}
+
+\paragraph{Multivektoren.}
+
+\paragraph{Speichermanagement "uber den Vektor-Manager.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Operatoren}
+
+\paragraph{Der BlockOp.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Matrizen}
+
+\newcommand \clsallgdiag [3]
+{%
+  \framebox(#1,#2)
+  {%
+    \begin{minipage}{#1\unitlength}
+    \begin{center}
+    \footnotesize
+    #3
+    \end{center}
+    \end{minipage}
+  }
+}
+\newcommand \clsdiag[2][0.75] {\clsallgdiag{2.5}{#1}{#2}}
+
+\newcommand \abstrakt {\itshape}
+
+\setlength{\unitlength}{10mm}
+\begin{picture}(15,8)
+\put( 7   , 7   ){\clsdiag{\abstrakt Op}}
+\put( 8.25, 6.5 ){\vector(0,1){0.5}}
+\put( 3.75, 5.75){\line(0,1){0.75}}
+\put( 6.25, 5.75){\line(0,1){0.75}}
+\put( 9.75, 5.75){\line(0,1){0.75}}
+\put(12.75, 5.75){\line(0,1){0.75}}
+\put( 3.75, 6.5 ){\line(1,0){9}}
+%
+\put( 2.5 , 5   ){\clsdiag{\abstrakt Matrix}}
+\put( 1.25, 2.75){\line(0,1){0.75}}
+\put( 5.75, 2.75){\line(0,1){0.75}}
+\put( 1.25, 3.5 ){\line(1,0){4.5}}
+\put( 3.75, 3.5){\vector(0,1){1.5}}
+%
+\put( 0   , 2   ){\clsdiag{\abstrakt GenBandMatrix}}
+\put( 1.25, 0.75){\vector(0,1){1.25}}
+\put(-0.5 ,-0.75){\clsallgdiag{3}{1.5}{S9\_2D\_BandMatrix\\S27\_3D\_BandMatrix}}
+\put( 4.5 , 2   ){\clsdiag{\abstrakt GenSparseMatrix}}
+\put( 4.25, 0.75){\line(0,1){0.75}}
+\put( 7.25, 0.75){\line(0,1){0.75}}
+\put( 4.25, 1.5 ){\line(1,0){3}}
+\put( 5.75, 1.5){\vector(0,1){0.5}}
+\put( 3   , 0   ){\clsdiag{SparseMatrix}}
+\put( 6   ,-0.75){\clsdiag[1.5]{UniformGrid\\SparseMatrix}}
+%
+%
+\put( 5.5 , 4.25){\clsdiag[1.5]{MyFastUniform\\GridMatrix}}
+\put( 8.5 , 5   ){\clsdiag{UGBMatrix}}
+%
+%
+\put(11.5 , 5   ){\clsdiag{\abstrakt GenSparseOp}}
+\put(11.25, 2.75){\line(0,1){0.75}}
+\put(14.25, 2.75){\line(0,1){0.75}}
+\put(11.25, 3.5 ){\line(1,0){3}}
+\put(12.75, 3.5){\vector(0,1){1.5}}
+%
+\put(10   , 1.25){\clsdiag[1.5]{FastUniform\\GridMatrix}}
+\put(13   , 1.25){\clsdiag[1.5]{UniGrid\\CSR\_Matrix}}
+%
+\end{picture}
+\vspace{2cm}
+
+\subsection{General explanations}
+\paragraph{Why are not all matrix classes derived from \texttt{Matrix}?}
+aol::Matrix is an abstract basis class for matrices that provides
+virtual methods get, set and add. These methods are mainly used for
+assembling matrices, so their efficiency may be critical.
+
+For faster assembly, some ``matrices'' are not derived from
+aol::Matrix, thus lacking some methods.
+
+\paragraph{Which interfaces are defined by \texttt{Matrix},
+\texttt{GenBandMatrix}, \texttt{GenSparseMatrix} and \texttt{GenSparseOp}? How do they differ?}
+aol::GenBandMatrix is an abstract basis class for band matrices. Only
+entries in bands parallel (but not necessarily adjacent) to the main
+diagonal are stored, the storage is organized row-wise for
+cache-efficiency in matrix-vector multiplication.
+
+aol::GenSparseMatrix is an abstract basis class for sparse matrices
+that are organized in rows. They contain a vector of pointers to
+aol::Rows which may be filled with different row objects.
+
+\subsection{The matrix classes in detail}
+Note that remarks about the speed of matrices may significantly depend
+on the platform, the compiler and its settings, so you should run the
+sparsebench benchmark to see which matrix works best in your
+environment.
+
+\subsubsection{aol::FullMatrix}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\paragraph{For which applications is this matrix class designed?}
+Dense matrices.
+
+\paragraph{Advantages}
+``Fast'' access.
+
+\paragraph{Disadvantages}
+Storage of all entries, even if they are zero.
+
+\paragraph{Internal structure and how it works}
+Two-dimensional array of all entries.
+
+
+\subsubsection{aol::SparseMatrix}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\paragraph{For which applications is this matrix class designed?}
+Unstructured sparse matrix.
+
+\paragraph{Advantages}
+Most flexible class for sparse matrices.
+
+\paragraph{Disadvantages}
+Least efficient because no sparsity structure is known implicitely.
+
+\paragraph{Internal structure and how it works}
+Each row stores a (sorted) stl-vector of aol::RowEntries containing a
+pair (column index, value).
+
+
+
+\subsubsection{qc::S9\_2D\_BandMatrix, qc::S27\_3D\_BandMatrix}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\paragraph{For which applications is this matrix class designed?}
+For applications on an uniform rectangular (2D) or an uniform hexagonal (3D) mesh,
+which result in 9 (2D) or 27 (3D) entries per row.
+
+\paragraph{Advantages}
+Fast access and matrix-vector multiplication, fast row-wise access.
+
+\paragraph{Disadvantages}
+Small memory overhead (two integers per row).
+
+\paragraph{Internal structure and how it works}
+Only bands containing nonzero entries are stored, entries are stored
+row-wise. Lookup tables for the offsets are created when creating
+matrix.
+
+\subsubsection{aol::TriBandMatrix, aol::LQuadBandMatrix}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\paragraph{For which applications is this matrix class designed?}
+Tridiagonal matrices and Quadridiagonal matrices (two lower, one upper
+diagonal) adjacent to main diagonal.
+
+
+\subsubsection{qc::UniformGridSparseMatrix}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\paragraph{For which applications is this matrix class designed?}
+For applications on an uniform rectangular (2D) or an uniform hexagonal (3D) mesh,
+which result in 9 (2D) or 27 (3D) entries per row.
+
+\paragraph{Advantages}
+The \texttt{applyAdd}-method is about 2 times (2D) or
+1.5 times (3D) faster than the simple SparseMatrix.
+
+\paragraph{Disadvantages}
+The \texttt{assemble}-method is not faster, but even slightly slower.
+
+\paragraph{Internal structure and how it works}
+This matrix is derived from \texttt{GenSparseMatrix}, the main
+difference is: The rows that belong to inner nodes are special
+\texttt{UniformGridSparseRows} (implemented in rows.h) which are just
+arrays of the specified DataType with 9 (2D) or 27 (3D) entries.  The
+dimension is read from the grid and set automatically. The methods
+\texttt{get} and \texttt{set} allow for the uniform structure of the
+grid and compute the belonging array-index to the desired
+matrix-entry.
+
+Furtheron the \texttt{realloc}-method makes use of the uniform grid
+structure.
+
+
+\subsubsection{qc::FastUniformGridMatrix}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\paragraph{For which applications is this matrix class designed?}
+For applications on an uniform rectangular (2D) or an uniform
+hexagonal (3D) mesh, which result in 9 (2D) or 27 (3D) entries per
+row.
+
+\paragraph{Advantages}
+Since this matrix is not derived from aol::Matrix, it doesn't use
+the virtual get and set methods, but its own faster ones.
+The \texttt{assemble}-method is much faster than the one from the
+UniformGridSparseMatrix (about 2.5 times in 2D and 3D), the
+\texttt{apply}-method is at least a bit faster (about 1.4 times in 2D
+and 3D).
+
+\paragraph{Disadvantages}
+Not derived from aol::Matrix
+
+\paragraph{Internal structure and how it works}
+The \texttt{FastUniformGridMatrix} is derived from the
+\texttt{GenSparseOp} and \textit{not} from the \texttt{GenSparseMatrix}.
+This makes it possible that it has its own once more optimized
+methods.  The rows are again stored as simple DataType-arrays, but the
+access is organised with some kind of hierarchical principle: The rows
+are divided into three blocks, which consist of three diagonals (in
+2D) or once again of three blocks which then are divided into three
+diagonals (in 3D). To access the value of an index $(i,j)$ the
+belonging block and the index in this block are computed.
+
+Furtheron the \texttt{applyAdd}-method also doesn't need to use the
+\texttt{mult}-method from the \texttt{rows}, as it is the case for all
+matrices that are derived from the \texttt{GenSparseMatrix}. Instead
+it is implemented in a hierarchical way which uses the block structure
+described above.
+
+\subsubsection{qc::UGBMatrix}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\paragraph{For which applications is this matrix class designed?}
+For applications which produce a band matrix and work on the grids of
+types RectangularGrid or GridDefinition.
+
+\paragraph{Advantages}
+Very cache-efficient matrix-vector multiplication.
+
+\paragraph{Disadvantages}
+Not an aol::Matrix.
+
+\paragraph{Internal structure and how it works}
+The method used here is a sparse banded block multiplication scheme
+which takes advantage of data localization in the cache of the
+processor. With use of the intel compiler icc/ecc and the pragma
+directives pragma ivdep and efficient vectorization of the code can be
+achieved by setting the define VECTORIZE\_INTEL during
+compilation. \\
+The template parameter blocksize defines the size of the blocks which
+are used in the multiplication method. blocksize should be chosen such
+that sizeof(DataType)*columns*blocksize is less than the size of the
+largest cache of the processor.
+
+
+\subsubsection{aol::CSR\_Matrix}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\paragraph{For which applications is this matrix class designed?}
+Unstructured sparse matrices.
+
+\paragraph{Advantages}
+Efficient matrix-vector multiplication.
+
+\paragraph{Disadvantages}
+Not an aol::Matrix. No (or very slow) random access. Only works for
+double precision data type.
+
+\paragraph{Internal structure and how it works}
+A matrix stored in compressed sparse row storage format, a standard
+format (see MKL).
+
+\subsubsection{qc::UniGridCSR\_Matrix}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\paragraph{For which applications is this matrix class designed?}
+For applications on an uniform rectangular (2D) or an uniform
+hexagonal (3D) mesh, which result in 9 (2D) or 27 (3D) entries per
+row.
+
+\subsubsection{MyFastUniformGridMatrix}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This matrix class is obsolete and will be (or has been) merged with
+FastUniformGridMatrix.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{L"oser f"ur lineare Gleichungssysteme}
+
+\anmerkung{bish. Anleitung verbessern, Liste h"ubscher, aber beibehalten}
+\anmerkung{Referenz f"ur Algorithmen angeben. Wenn Notation selbst erdacht:
+Algorithmus hinschreiben.\\
+Voraussetzungen an Matrix klarer und deutlicher\\
+Benutzung der L"oser vor Auflistung}
+
+\anmerkung{Was ist mit Martins QR-Zerlegung, alte Anl. Seite 69?}
+
+\section{Vorkonditionierer}
+
+\anmerkung{wie L"oser: bisherige Liste behalten, nur aufh"ubschen}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Newton-Verfahren}
+
+\anmerkung{neu verfassen f"ur Benjamins Newton-Verf.\\
+Dabei Klassendiagramm wg. un"ubersichtlicher Vererbung\\
+Ablaufdiagramm aus Stefans Kurzdoku Pkt. 1.5}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Gradientenabstiegsverfahren}
+\anmerkung{ebenfalls Klassendiagramm. GradientFlow-Erkl"arung,
+alte Anl. Seite 81, wiederverwenden}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Gew"ohnliche DGl}
+
+\anmerkung{Motivation (Ortsdiskret. "uber FE, Zeit "uber fin. Diff. f"uhrt zu
+gro"sen DGl-Systemen)}
+
+\paragraph{Die Klasse Timestep}
+\anmerkung{alte Anl. Seite 75, aber allgemeiner. Parabolische pDGl nur als
+Beispiel.}

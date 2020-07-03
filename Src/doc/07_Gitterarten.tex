@@ -1,0 +1,385 @@
+\chapter{Gitterarten und ihre Konfiguratoren}
+\label{sec:Gitterarten}
+
+\anmerkung{Geh"oren BEM hierhin oder besser ins FE-Kapitel? Oder ein eigenes?}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Vollbesetzte QuocMeshes}
+% Autor von Deylen, Oct 2008
+
+Die Knoten der Quoc-Gitter sind invers lexikographisch numeriert, der
+Knoten $(i, j, k)$ in einem Gitter der Größe $(n_x, n_y, n_z)$ hat
+also Index $i + n_x (j + n_y\,k)$. Quaderförmige Elemente werden
+indiziert über die vordere untere linke Ecke indiziert. Zu simplizialen
+Elementen siehe Abschnitt \ref{sec:SimplElemente}.
+
+Bisher (Okt. 2008) wird die Größe fast aller Strukturen als
+\lstinline!aol::Vec3<int>! angegeben, auch wenn ein Template-Argument
+sagt, daß die Struktur zweidimensional benutzt wird. Dies soll
+umgestellt werden auf \lstinline!aol::GridSize!. Diese Klasse
+kann auch jetzt schon für das Setzen und Auslesen von Gittergrößen
+verwendet werden. Zuweisung mit rechten Seite \lstinline!aol::Vec2<int>!
+und \lstinline!aol::Vec3<int>! sind möglich, genauso existieren
+implizite Umwandlungsoperatoren in diese Klassen.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Zusicherung für alle Gitter}
+% Autor von Deylen, Oct 2008
+
+\lstset{numbers=none, aboveskip=0.5\medskipamount}
+Für verschiedene Anwendungsbereiche gibt es verschiedene Gitter, unter
+anderem:
+\begin{lstlisting}
+qc::GridDefinition
+qc::RectangularGrid
+qc::simplex::GridStructure
+nb::NarrowBandGrid
+\end{lstlisting}
+
+Allgemeine Klasse wie FE-Operatoren oder Abstiegsverfahren sollten keine
+Annahmen über die interne Struktur des übergebenen Gitters treffen.
+Wenn sie sich an die folgende Schnittstelle halten, ist die Verwendbarkeit
+in allen Gittern gesichert.
+
+Jedes Gitter implementiert das folgende Minimalgerüst:
+\begin{lstlisting}[numbers=left, stepnumber=5, aboveskip=\medskipamount]
+template <...>
+class Grid {
+public:
+  typedef ... ElementType;
+  typedef ... FullElementIterator;
+  typedef ... FullNodeIterator;
+  typedef ... BeginIterType;
+  typedef ... EndIterType;
+
+  Grid ( const GridSize & );
+
+  qc::Dimension getDimOfWorld() const;
+  int getElementIndex ( const ElementType & ) const;
+
+  int getNumX() const;
+  int getNumY() const;
+  int getNumZ() const;
+  GridSize getSize() const;
+  int getNumberOfNodes() const;
+  double H() const;
+
+  const BeginIterType & begin() const;
+  const EndIterType & end() const;
+};
+\end{lstlisting}
+
+Die Funktion \lstinline!getNumberOfNodes()! liefert dabei die Anzahl an Datenwerten,
+die für ein Skalarfeld auf dem Gitter gespeichert werden müssen. Für das
+\lstinline!nb::NarrowBandGrid! bedeutet dies die Größe des Vollgitters, nicht
+die Anzahl benutzter Knoten.
+
+Die Funktion \lstinline!H()! liefert die maximale Entfernung zwischen zwei Gitterknoten
+zurück.
+
+Ein Iterator vom Typ \lstinline!IterT! muß folgendes Minimalgerüst implementieren:
+\begin{lstlisting}
+template <...>
+class Iterator {
+public:
+  Iterator ( const BeginIterType & );
+  bool operator!= ( const EndIterType & ) const
+  ElementType & operator* ();
+  ElementType * operator-> ();
+};
+\end{lstlisting}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Zusicherung für alle Konfiguratoren}
+% Autor von Deylen, Oct 2008
+
+Jeder Konfigurator implementiert das Minimalgerüst:
+\begin{lstlisting}[numbers=left, stepnumber=5, aboveskip=\medskipamount]
+template < ... >
+class Configurator {
+public:
+  typedef ... RealType;
+  typedef ... InitType;
+
+  typedef ... ElementType;
+  typedef ... ElementIteratorType;
+  typedef ... BaseFuncSetType;
+  typedef ... QuadType;
+
+  typedef ... ArrayType;
+  typedef ... VectorType;
+  typedef ... MatrixType;
+  typedef ... FullMatrixType;
+  typedef ... MaskType;
+
+  typedef ... DomVecType;
+  typedef ... VecType;
+  typedef ... MatType;
+
+  Configurator ( const InitType & );
+
+  int getNumLocalDofs ( const ElementType & ) const;
+  int getNumGlobalDofs () const;
+  int maxNumQuadPoints() const;
+
+  const InitType & getInitializer() const;
+  MatrixType * createNewMatrix() const;
+
+  const BaseFuncSetType & getBaseFuncSet ( const ElementType & ) const;
+  int localToGlobal ( const ElementType &, int localIndex ) const;
+  RealType vol ( const ElementType & ) const;
+  RealType H ( const ElementType & ) const;
+
+  const InitType::BeginIterType & begin() const;
+  const InitType::EndIterType & end() const;
+
+  static const int                      maxNumLocalDofs;
+  static const qc::Dimension            Dim;
+  static const qc::Dimension            DomDim;
+  static const aol::GridGlobalIndexMode IndexMode;
+};
+\end{lstlisting}
+
+Dabei ist \lstinline!DomVecType! der Typ, in dem die Quadraturregel
+Referenzkoordinaten für die Quadratur angibt, bei Würfelgittern
+also ein \lstinline!Vec<RealType, DomDim>!, bei simplizialen Gittern
+(siehe unten) baryzentrische Koordinaten mit einer Komponenten mehr.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Simpliziale Elemente}
+\label{sec:SimplElemente}
+% Autor von Deylen, Oct 2008
+
+Die simplizialen Gitter in den QuocMeshes sind kein eigenständiges
+Gitterkonstrukt. Sie benötigen ein zugrundeliegendes Würfelgitter,
+das durch Unterteilung der Würfel in Simplicia\footnote
+{
+	\textit{simplex, simplex, simplex} wird kurz-i-dekliniert.
+	Schon ohne dieses Wissen wäre "`Simplices"' mit höchster Sicherheit
+	als falscher Plural des Neutrums zu erkennen. Es ist korrekter Plural
+	des Maskulinums, und also gibt es drei grammatisch korrekte Varianten:\\
+	das Simplex, die Simplicia\\
+	der Simplex, die Simplices\\
+	der/das Simplex, die Simplexe.
+}
+zu einem Simplex-Gitter wird.
+
+In 2D wird jedes Quadrat in zwei Dreiecke geteilt, in 3D jeder Würfel
+in sechs Tetraeder. Die Unterteilung ist identisch zu der im CFE-Modul.
+
+\paragraph{Koordinaten.}
+Referenzkoordinaten innerhalb eines Elements sind baryzentrische
+Koordinaten. Hierfür existiert die Klasse \lstinline!BarCoord<int, RealType>!,
+die auch über den \lstinline!VecDimTrait! zugänglich ist:
+\begin{lstlisting}
+template <class _DataType, int dim>
+class VecDimTrait {};
+
+template <class _DataType>
+class VecDimTrait<_DataType, 2> {
+public:
+  typedef aol::Vec2<_DataType> VecType;
+  typedef aol::BarCoord<2, _DataType> BarCoordType;
+};
+
+template <class _DataType>
+class VecDimTrait<_DataType, 3> {
+public:
+  typedef aol::Vec3<_DataType> VecType;
+  typedef aol::BarCoord<3, _DataType> BarCoordType;
+};
+\end{lstlisting}
+
+Hieraus wird deutlich, daß der Template-Parameter \lstinline!dim!
+für \lstinline!BarCoord! nicht die Länge des Vectors, sondern die
+Dimension des umgebenden Raums angibt. Ein
+\lstinline!BarCoord<3, double>! beschreibt Punkte im dreidimensionalen
+Standardsimplex und besitzt also vier Komponenten.
+
+Man kann sich streiten, ob das Durchschleusen des \lstinline!DataType!
+richtig ist oder vielmehr \lstinline!RealTrait<DataType>::RealType! die
+korrekte Wahl wäre, immerhin liegen die baryzentrischen Koordinaten
+zwingend zwischen $0$ und $1$, sind mithin sinnvollerweise stets
+reellwertig. Ganzzahlige baryzentrische Koordinaten sind genau an
+den Ecken möglich.
+
+\paragraph{Namensraum.}
+Sämtliche Klassen liegen im Unter-Namensraum \lstinline!qc::simplex!
+im Modul \lstinline!qc!. In den hiesigen Code-Beispielen wird er
+zur Übersichtlichkeit fortgelassen. Das entspricht dem sicherlich
+sinnvollen \lstinline!using namespace qc::simplex;! am Anfang einer
+\texttt{cpp}-Datei im Projektverzeichnis.
+
+\paragraph{Gitter.}
+Das Gitter bekommt als Template-Argument den Typ des Würfel-Gitters.
+Es wird auch durch Übergabe solch eines Würfel-Gitters konstruiert:
+\begin{lstlisting}
+template <typename CubicGrid>
+class GridStructure {
+public:
+  GridStructure ( CubicGrid & CubicGrid );
+  ...
+};
+\end{lstlisting}
+
+\paragraph{Iteratoren.}
+Der Knoteniterator des Würfelgitters wird durchgeschleust.
+
+Der Elementiterator ist zusammengesetzt aus dem Würfel-Elementinterator
+und einem Simplex-in-Würfel-Iterator. Er durchläuft in äußerer Schleife
+alle Würfelelemente, in innerer alle Simplicia eines Würfels.
+
+\paragraph{BaseFunctionSet.}
+Die Basisfunktionen sind ohne Rückgriff auf Würfel-Klassen geschrieben.
+Es besteht bisher nur Bedarf nach linearen Basisfunktionen, also sind nur
+diese implementiert.
+
+\paragraph{Konfiguratoren.}
+Die Simplex-Gitter kennen keinen eigenen Index-Mapper. Ihre Funktion
+\lstinline!localToGlobal()! übersetzt erst lokale Simplex- in lokale
+Würfelindices und benutzt hinterher das \lstinline!localToGlobal()!
+des passenden Würfel-Konfigurators.
+
+\subsubsection{Kompatiblität zu Würfelgittern}
+
+Code, der je nach Präprozessor-\lstinline!define! mit simplizialen
+oder Würfelelementen arbeitet, stellt an das Würfelgitter folgende
+Anforderungen (die von der \lstinline!qc::simplex::GridStructure!
+erfüllt werden):
+\begin{lstlisting}
+typedef ... CubicGridType;
+const CubicGridType getCubicGrid() const;
+\end{lstlisting}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{D"unne B"ander}
+% Autor von Deylen, Oct 2008
+
+Narrow-Band-Gitter (NB-Gitter) sind in den QuocMeshes definiert als
+\begin{enumerate}
+\item	ein zugrundeliegendes volles Gitter zusammen mit
+\item	einer Liste der verwendeten Elemente.
+\end{enumerate}
+Ein Knoten wird verwendet, wenn mindestens ein an ihn angrenzendes
+Element verwendet wird.
+
+Derzeit wird die Liste der verwendeten Elemente als Hash-Set gespeichert.
+
+Das Vollgitter und die Dimension\footnote
+{
+	Da die \lstinline!qc::GridDefinition! bisher ihre Dimension
+	nur als Variable speichert und nicht darüber templatisiert
+	ist, muß die Dimension zusätzlich gegeben werden.
+}
+sind Template-Parameter.
+
+\subsection{Erzeugen eines NB-Gitters}
+Das NB-Gitter bekommt im Konstruktor ein fertig konstruiertes
+Vollgitter-Objekt übergeben. Folglich muß im Projekt ein solches
+deklariert werden. Zur Verwaltung der Elementliste stehen nur die
+Funktionen
+\begin{lstlisting}
+bool exists ( const ElementType & ) const;
+void insert ( const ElementType & );
+void clear ();
+\end{lstlisting}
+zur Verfügung. Im Projekt kann beispielsweise mit folgendem Code
+ein überall mindestens \lstinline!bandwidth! breites Band um
+das Nullniveau der \textit{signed distance function}
+\lstinline!distanceArray! gefüllt werden:
+
+\begin{lstlisting}[numbers=left, stepnumber=5, aboveskip=\medskipamount]
+template <typename ConfType, typename ArrayType,
+          typename ElType, typename RealType>
+bool elementCutsBand(const ConfType & configurator,
+                     const ArrayType & distanceArray,
+                     const ElType & element,
+                     RealType bandWidth) {
+  int numLocalDofs = configurator.getNumLocalDofs ( element );
+  for (int i = 0; i < numLocalDofs; ++i)
+    if (fabs(distanceArray[configurator.
+                     localToGlobal ( element, i )]) < bandWidth)
+      return true;
+  return false;
+}
+
+template <typename RealType, typename NarrowBandGridType,
+          typename ArrayType, typename ConfType>
+void fillNarrowBandGrid
+  ( const typename NarrowBandGridType::FullGridType & fullGrid,
+    const ConfType & configurator,
+    const ArrayType & levelFct,
+    RealType bandWidth,
+    NarrowBandGridType & narrowGrid ) {
+  typedef typename NarrowBandGridType::FullGridType::
+                                  FullElementIterator Iterator;
+  for (Iterator iter = fullGrid.begin(); iter != fullGrid.end(); ++iter)
+    if (elementCutsBand(configurator, levelFct, *iter, bandWidth))
+      narrowGrid.insert(*iter);
+}
+\end{lstlisting}
+
+\subsection{Konfiguratoren}
+
+Bisher gibt es noch eigene NB-Konfiguratoren. Diese sollten nicht mehr
+verwendet werden. Stattdessen kann eine "`Hülle"' um Vollgitter-Konfiguratoren
+gestülpt werden:
+\begin{lstlisting}[numbers=left, aboveskip=\medskipamount]
+template <typename FullGridConfType, typename NBGridType>
+class FullGridConfiguratorHull {
+public:
+  FullGridConfiguratorHull ( const NBGridType & );
+  void writeNodeExistMaskTo ( MaskType & ) const;
+};
+\end{lstlisting}
+sowie mit allen Typen und Funktionen der allgemeinen Zusicherung.
+
+\subsection{Kompatiblität zum Vollgitter}
+
+Code, der je nach Präprozessor-\lstinline!define! mit vollem
+oder NB-Gitter arbeitet, stellt an das Vollgitter folgende
+Anforderungen (die vom \lstinline!nb::NarrowBandGrid!
+erfüllt werden):
+\begin{lstlisting}
+typedef ... FullGridType;
+const FullGridType getFullGrid() const;
+\end{lstlisting}
+
+\subsection{Weiteres}
+
+\paragraph{Zusätzliche Iteratoren.}
+Über die allgemeinen Zusicherungen hinaus gibt es die Funktionen:
+\begin{lstlisting}
+eiterator ebegin () const;
+eiterator eend () const;
+biterator bbegin () const;
+biterator bend () const;
+\end{lstlisting}
+
+\paragraph{Simpliziale NB-Gitter.}
+Das Vollgitter-Template-Argument darf auch ein simpliziales
+Gitter sein.
+
+\lstset{numbers=left, aboveskip=\medskipamount}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{SurfMeshes}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{DT-Grids}

@@ -1,0 +1,359 @@
+\chapter{Finite Elemente}
+
+\section{Gitter, Konfiguratoren, Basisfunktionen}
+\lstset{aboveskip=\medskipamount}
+% Autor von Deylen
+
+Wir betrachten beispielhaft das Helmholtz-Problem: Finde f"ur
+festes $\alpha \in \R$ ein $u: \bar \Omega \to \R$ mit
+\begin{eqnarray*}
+ u - \alpha \Delta u & = & f  \quad \mbox{ in } \Omega \\
+\partial_\nu u &=& 0 \quad \mbox{ auf } \partial \Omega
+\end{eqnarray*}
+
+Diese Gleichheit weichen wir f"ur die schwachen Formulierung auf zu
+\[
+	\int_\Omega (u - \alpha \Delta u) \phi = \int_\Omega f\,\phi \qquad
+	\text{f"ur alle } \phi \in H^{1,2}(\Omega).
+\]
+Durch partielle Integration ergibt dies
+\[
+	\int_\Omega  u \, \phi + \alpha \int_\Omega \nabla u \cdot \nabla \phi = \int_{\partial \Omega }
+	\underbrace{\nabla u \cdot \nu}_{=0}\, \phi + \int f \, \phi
+\]
+Wir k"urzen $F(\phi) := \int f \, \phi$ ab.
+
+Gesucht ist nun eine Approximation $U \in \V_h$ von $u$ f"ur einen
+endlichdimensionalen Ansatzraum $\V_h = \Span (\phi_1, \dots, \phi_N)$:
+\[
+	U = \sum_j \bar U_j\, \phi_j
+\]
+Dies f"ur $u$ eingesetzt ergibt (Integrale von jetzt an immer "uber $\Omega$)
+\[
+	\int \sum \bar U_j \, \phi_j \, \phi_i + \alpha
+	\int \sum \bar U_j \, \nabla \phi_j \cdot \nabla \phi_i = F(\phi_i)
+	\qquad \text{f"ur alle $i$}
+\]
+Integration und Summenbildung l"a"st sich vertauschen, es bleiben
+nur die Integrale "uber $\phi_j \, \phi_i$ respektive die Gradienten
+"ubrig. Sie fassen wir in Matrizen zusammen:
+\[
+	M_{ij} := \int \phi_i\, \phi_j, \qquad
+	L_{ij} := \int \nabla \phi_i \, \nabla \phi_j
+\]
+Dies ergibt ein lineares Gleichungssystem:
+\[
+	(M + \alpha L) \bar U = \bar F
+\]
+
+Will man diese L"osungsmethode praktisch implementieren, lassen sich die
+zu kl"arenden Fragen (mit einigem guten Willen) aufteilen in:
+\begin{description}
+\item[Ansatzfunktionen:]
+	Generell wird man $\phi_i$ mit kompaktem Tr"ager verwenden, die einen
+	Spline-Raum zur Approximation von $u$ aufspannen, dessen Elemente dieses
+	Ansatzraumes global stetig, stetig differenzierbar oder (seltener)
+	von h"oherer globaler Glattheit sein werden. Die $\phi_i$ werden stets
+	als nodale Basis dieses Raums gew"ahlt. Beispiele:
+	\begin{enumerate}
+	\item	Hutfunktionen f"ur global stetige Splines (Tr"ager sind
+			in 2D sechs Dreiecke und in 3D acht Tetraeder)
+	\item	in 2D bilineare, in 3D trilineare, allgemein
+			multilineare Funktionen
+			f"ur global stetig differenzierbare Splines
+			(Tr"ager sind die vier (2D) bzw. acht (3D)
+			umgebenden Einheitskuben)
+	\end{enumerate}
+
+	Die üblichen Ansatzfunktionen der QuocMeshes sind multilinear, die
+	Elemente sind also Quader. Es gibt auch Unterstützung für lineare
+	Ansatzfunktionen auf simplizialen Elementen.
+%
+\item[Gitter:]
+	Soll das Gitter uniform sein, d. h. sollen
+	alle im Rechenbereich liegenden Punkte eines Gitternetzes
+	$\frac 1 h \mathds Z^d \subset \R^d$ benutzt werden, nur eine
+	Auswahl davon, oder darf das Gitter auch unregelm"a"sig
+	verfeinert sein?
+
+	In den QuocMeshes ist das Gitter stets
+	uniform, au"ser bei der DT-Grid-Struktur sind stets alle
+	Gitterpunkte des Einheitsw"urfels Aufpunkte je einer Basisfunktion.
+\item[Quadratur:]
+	Die Integration "uber die einzelnen Elemente sollte
+	unabh"angig von der Wahl der Basisfunktionen implementiert
+	werden. -- Zwar k"onnte das Programm automatisch nach Wahl
+	der Basisfunktion eine Quadraturregel bestimmen, die die
+	o. g. Integrale exakt berechnet; dieser Ansatz st"o"st
+	allerdings an seine Grenzen, sobald nichtlineare
+	Operatoren betrachtet werden. Deswegen ist es möglich,
+	die Ordnung der Quadraturregel unabhängig von den
+	Ansatzfunktionen zu bestimmen.
+
+	Die QuocMeshes verwenden Mittelpunkts- und
+	Gau"squadraturen, deren Ordnung
+	meist so gew"ahlt wird, da"s die linearen Operatoren
+	exakt integriert werden bzw. bei nichtlinearen
+	Operatoren die Fehlerordnung gen"ugend hoch ist.
+\end{description}
+
+Entscheidungen über diese drei Ingredienzen des FE-Algorithmus werden
+mithilfe von \textbf{Gittern} und \textbf{Konfiguratoren} getroffen.
+Dabei speichert ein Gitter nur die topologische und geometrische Anordnung
+der Elemente, der Konfigurator wählt Basisfunktionen und eine Quadraturregel
+aus. Und wie das geht -- zeigen wir Euch nach der nächsten Maus\footnote
+{sc. Abschnittsüberschrift.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Darstellung am Beispiel}
+
+\subsection*{Beispiel 1: MassOp zur Integration}
+
+Ein anderes, mit den QuocMeshes erstelltes Programm, habe ein 2D-Array von
+Funktionswerten berechnet, die nun eingelesen und als Werte einer
+Funktion $u$ an den Knoten eines Würfelgitters verstanden werden sollen.
+Dazwischen soll $u$ bilinear interpoliert werden. Der hierfür benötigte
+Konfigurator ist \lstinline!qc::QuocConfiguratorTraitMultiLin!. Er
+bekommt als Template-Argumente
+\begin{enumerate}
+\item	den gewünschten Datentyp für Fließkomma-Zahlen (\lstinline!RealType!)
+\item	die Dimension, hier \lstinline!qc::QC_2D!
+\item	die gewünschte Quadraturregel. Es gibt keine Gauß-Quadratur zweiter
+		Ordnung, mit zwei Stützstellen erhalten wir bereits Ordnung 3.
+		Also verwenden wir die Klasse \\
+		\lstinline!aol::GaussQuadrature<double, qc::QC_2D, 3>!.
+\end{enumerate}
+
+\lstset{numbers=left, firstnumber=last}
+\begin{lstlisting}[firstnumber=0]
+typedef double RealType;
+typedef aol::GaussQuadrature<RealType, qc::QC_2D, 3> QuadType;
+typedef qc::QuocConfiguratorTraitMultiLin<RealType,
+                                       qc::QC_2D, QuadType> ConfType;
+
+int main() {
+\end{lstlisting}
+Für dieses Beispiel kennen wir die Größe des Datensatzes, er sei eine
+$(2^5 + 1) \times (2^5 + 1)$-Matrix von \lstinline!double!-Werten:
+\begin{lstlisting}
+  qc::ScalarArray2d<RealType> u ( "fct_data.dat" );
+  qc::GridDefinition grid ( 5, qc::QC_2D );
+  ConfType configurator ( grid );
+\end{lstlisting}
+Wir wollen jetzt
+\[
+	\int_\Omega u = \int_\Omega \sum_i \bar U_i \phi_i
+\]
+berechnen. Da die multilinearen Basisfunktionen $\phi_i$ eine Zerlegung
+der Eins bilden, ist dies gleich
+\[
+	\qquad \qquad = \int_\Omega \sum_{i,j} \bar U_i \phi_i \phi_j = M\, \bar U \cdot \bar 1,
+\]
+wobei $\bar 1$ den Vektoren bezeichnet, dessen Einträge alle $1$ sind.
+Die Massematrix $M$ bekommen wir durch den \lstinline!MassOp!. Der
+Rest des Programms ist lineare Algebra:
+\begin{lstlisting}
+  aol::Vector<RealType> M_u ( u.size() );
+  aol::MassOp<ConfType> massOp ( grid, aol::ASSEMBLED );
+  massOp.apply ( u, M_u );
+
+  aol::Vector<RealType> ones ( u.size() );
+  ones.setAll ( 1. );
+  cout << "Integral ueber u: " << M_u * ones << endl;
+}
+\end{lstlisting}
+\lstset{firstnumber=auto}
+
+In diesem Beispiel speichert der \lstinline!MassOp! selbst die assemblierte
+Matrix. Im nächsten Beispiel werden wir dem Konstruktor kein zweites
+Argument übergeben. Dann wird das Default-Argument \lstinline!aol::ONTHEFLY!
+benutzt. Es sorgt dafür, daß der Operator bei jedem \lstinline!apply!-Aufruf
+seine Quadratur
+
+\subsection*{Beispiel 2: Helmholtz-Problem mit Neumann-Randwerten}
+
+In diesem Beispiel laden wir die Randdaten zum Lösen der am Kapitelanfang
+beschriebenen partiellen Differentialgleichung. Wir assemblieren
+die Systemmatrix $M + \alpha L$ in einer Matrix und übergeben diese an
+einen CG-Löser. Die \lstinline!typedef!s übernehmen wir. Den Typ
+\lstinline!ScalarArray2d! brauchen wir gar nicht explizit zu verwenden,
+er steht durch den Konfigurator als \lstinline!ConfType::ArrayType!
+bereits zur Verfügung. Im Gegensatz zum \lstinline!Vector! speichert er
+seine Inhalte mit Informationen über $x$- und $y$-Ausdehnung.
+
+\begin{lstlisting}
+typedef double RealType;
+typedef aol::GaussQuadrature<RealType, qc::QC_2D, 3> QuadType;
+typedef qc::QuocConfiguratorTraitMultiLin<RealType,
+                                       qc::QC_2D, QuadType> ConfType;
+
+int main() {
+  ConfType::ArrayType f ( "rhs_data.dat" );
+  qc::GridDefinition grid ( 5, qc::QC_2D );
+  ConfType configurator ( grid );
+
+  aol::StiffOp<ConfType> stiffOp ( grid );
+  aol::MassOp<ConfType>  massOp ( grid );
+  ConfType::MatrixType mat ( grid );
+  massOp.assembleAddMatrix( mat );
+  RealType alpha; cin >> alpha; mat *= alpha;
+  stiffOp.assembleAddMatrix ( mat, alpha );
+
+  ConfType::ArrayType rhs ( f, aol::STRUCT_COPY ),
+                        u ( f, aol::STRUCT_COPY );
+  mass.apply( f, rhs );
+
+  aol::CGInverse<aol::Vector<RealType> > solver( mat );
+  solver.apply( rhs, u );
+}
+\end{lstlisting}
+
+\subsection*{Schlußwort zu den Beispielen}
+
+An dieser Stelle wäre eine Liste schön, die die möglichen Gitter, Konfiguratoren
+und Quadraturregeln aufzählt. Eine solche List ist aber unmöglich zu warten,
+daher verweisen wir auf das Prinzip örtlicher Lokalität in der \textit{doxygen}-%
+Dokumentation und den Bibliotheks-Headern: Eng verwandte Klassen haben meistens
+ähnliche Namen, stehen also in der \textit{doxygen}-Klassenliste eng
+beieinander, und meistens sind sie auch in einer gemeinsamen Datei deklariert.
+
+Antworten auf die Frage "`Was muß jedes Gitter / jeder Konstruktor können?"'
+versuchen die ersten Abschnitte des Kapitels \ref{sec:Gitterarten} zu geben.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Maskierung (Dirichlet-Randwerte)}
+
+Das Poisson-Problem
+\begin{eqnarray*}
+ - \Delta u & = & 0 \quad \mbox{ in } \Omega \\
+          u & = & u_\text{bd} \quad \mbox{ auf } \partial \Omega
+\end{eqnarray*}
+läßt sich FE-diskretisiert elegant schreiben als:
+\[
+	R_\text{int}\, L \, E_\text{int} \, \bar U_\text{int} = - R_\text{int}\, L\, E_\text{bd} \bar U_\text{bd}
+\]
+Dabei sind $U_\text{int}$ und $U_\text{bd}$ die Vektoren von Knotenwerten an
+den inneren bzw. äußeren Kanten, $E$ verlängert sie auf eine gemeinsame Länge,
+und $R_\text{int}$ wirft die Randknoten wieder fort. Die Steifigkeitsmatrix $L$
+ist hier also für alle, innere und Randknoten, gemeint.
+
+Zur praktischen Realisierung setzen wir
+\[
+	\bar U := E_\text{int} \, \bar U_\text{int}, \qquad
+	\bar B := E_\text{int} \, \bar U_\text{bd}
+\]
+Jetzt haben alle verwendeten Vektoren eine gemeinsame Länge.
+
+Die Restriktion $R_{int}$ hat im Programm keinen direkten Platz.
+Stattdessen ersetzen wir $R_{int}\, L$ auf der linken Seite
+durch eine Steifigkeitsmatrix, bei der in Zeilen und Spalten,
+die zu Randknoten gehören, alle Elemente gelöscht und nur das
+Diagonalelement auf $1$ gesetzt wird. Das Ergebnis ist äquivalent
+zu einer Steifigkeitsmatrix, die ohne diese Knoten assembliert wurde,
+zuzüglich einiger "`nicht dazugehöriger"' Zeilen und Spalten mittendrin.
+
+Insbesondere werden beim Lösen eines lin. GlS $L_\text{gestr.} \bar U =
+\bar F$ die zu Randknoten gehörigen Werte in $\bar F$ direkt kopiert,
+nur die Werte zu inneren Knoten nehmen am eigentlichen Lösen teil.
+
+Die rechte
+Seite behandeln wir jetzt, indem wir ohne weitere Vorbehandlung die
+Steifigkeitsmatrix $\bar B$ multiplizieren und danach auf die
+Randknoten wieder schreiben, was in $\bar U_\text{bd}$ stand.
+
+Modulo einer in Wirklichkeit nicht stattgefundenen Umsortierung
+der Knoten ist unser System jetzt folgendes:
+\[
+	\begin{pmatrix}
+	L_\text{int} & 0 \\
+	0 & 1 \\
+	\end{pmatrix} \, \begin{pmatrix}
+	                 \bar U_\text{int}\\
+	                 \bar U_\text{bd} \\
+	                 \end{pmatrix} = \begin{pmatrix}
+	                                 - R_\text{int} \, L\, E_\text{bd} \bar U_\text{bd} \\
+	                                 \bar U_\text{bd} \\
+	                                 \end{pmatrix}
+\]
+Die Implementierung ist \textit{straight forward}, wenn man
+die FE-Operator-Methode
+\begin{lstlisting}[aboveskip=0.5\medskipamount, numbers=none]
+assembleAddMatrix ( ConfType::MatrixType &, const ConfType::MaskType & )
+\end{lstlisting}
+kennt:
+\begin{lstlisting}[numbers=left]
+const qc::Dimension DIM = qc::QC_2D;
+typedef double RealType;
+typedef aol::GaussQuadrature<RealType, DIM, 3> QuadType;
+typedef qc::QuocConfiguratorTraitMultiLin<RealType,
+                                            DIM, QuadType > ConfType;
+int main () {
+  const int depth = 5;
+  qc::GridDefinition grid ( depth, DIM );
+  const int N = grid.getNumX();
+
+  ConfType::ArrayType bdryValues ( grid );
+  ConfType::MaskType bdryMask ( grid );
+  bdryMask.setAll ( false );
+
+  // note that only upper and lower bdry are set to Dirichlet
+  // boundaries. On left and right side, we will get natural
+  // Neumann boundary conditions.
+  for ( int i = 0; i < N; ++i ) {
+    DirichletMask.set ( i, 0 , true );
+    bdryValues.set ( i,  0 , aol::NumberTrait<double>::zero );
+
+    DirichletMask.set ( i, N - 1, true );
+    bdryValues.set ( i, N - 1,  1 + grid.H() * i );
+  }
+
+  aol::StiffOp< ConfType > stiffOp ( grid );
+  ConfType::MatrixType stiffOpMasked ( grid );
+  stiffOp.assembleAddMatrix ( stiffOpMasked, bdryMask );
+
+  ConfType::ArrayType rhs ( grid );
+  stiffOp.apply ( bdryValues, rhs );
+  rhs *= -1.;
+  rhs.assignMasked ( bdryValues, bdryMask );
+
+  ConfType::ArrayType u ( grid );
+  aol::CGInverse<aol::Vector<RealType> > solver( mat );
+  solver.apply( rhs, u );
+}
+\end{lstlisting}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Vorhandene FE-Operatoren}
+
+\originalTeX
+\input{feop_list}
+\germanTeX
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Weitere Bibliothekselemente}
+
+\anmerkung{Punkte der bisherigen Doku "uberarbeiten:
+zusammenh"angende S"atze, ggf. k"urzer, daf"ur Verweis auf bestehende Projekte}
+
+\anmerkung{Angabe von Ansprechpartnern?}
+
+\subsection{Faltung}
+
+\subsection{$L^2$-Projektion}
+
+\subsection{Mean curvature motion (MCM)}
+
+\subsection{Wulff \& Frank}

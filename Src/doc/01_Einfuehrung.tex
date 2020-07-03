@@ -1,0 +1,280 @@
+\chapter{Einf"uhrung}
+
+\section{Referenzen}
+
+Mit welchen Begriffen sollte man freih"andig umgehen k"onnen, wenn man diese
+Anleitung vollst"andig verstehen will? Welche B"ucher k"onnen dabei helfen?
+
+In die Literaturlisten wird jedes Werk aufgenommen, das ein Mitglied des
+QuocMesh-Kollektivs als hilfreich empfunden hat. Es sollte zu jedem Werk
+Schwerpunkt und ggf. Begrenzungen innerhalb der hier genannten Schlagworte
+genannt werden; jedes gelistete Werk sollte in der Mathematik-Bibliothek Bonn
+verf"ugbar gemacht werden.
+
+\subsection{Zur Mathematik}
+
+\paragraph{Begriffe:}
+Finite Elemente,
+endlichdimensionale Approximation,
+Approximationsr"aume,
+lineare, multilineare und quadratische nodale Basisfunktionen,
+Gau"s-Christoffel-Quadratur (ein- und mehrdimensional),
+schwache Formulierung partieller Differentialgleichungen,
+Variationsformulierung,
+Matrix-Vektor-Formulierung linearer partieller Differentialgleichungen,
+iterative L"oser f"ur lineare Gleichungssysteme (CG, Bi-CG, GMRES,
+allesamt mit und ohne Pr"akonditionierung),
+Multigrid-Verfahren,
+Newton-Verfahren (klassisch, Quasi-Newton, vereinfachter Newton),
+Gradientenabstieg,
+Gradientenflu"s
+
+\paragraph{Literatur:}
+\begin{description}
+\item[Peter Deuflhard, Andreas Hohmann:] Numerische Mathematik I. Berlin:
+	deGruyter $^3 2003$.
+
+	\textit{Klassische Stoffanordnung, sehr detailreich mit vielen
+	Prim"arquellen. Inhalt: Lineare Gleichungssysteme, Fehleranalyse,
+	Lin. Ausgleichsprobleme, Nichtlin. Gleichungssysteme, Lineare Eigenwertprobleme,
+	Drei-Term-Rekursion (darin alleinstehend), Interpolation und
+	Approximation, Iterative L"oser, Quadratur.
+	Erste Wahl f"ur die Vertiefung der Grundlagen.}
+%
+\item[Martin Hanke-Bourgeois:] Grundlagen der Numerischen Mathematik und des
+	Wissenschaftlichen Rechnens. Teubner $^2 2006$.
+
+	\textit{Von Beginn der Numerischen Mathematik bis zu Finiten Elementen
+	alles enthalten. Allerdings manches ungew"ohnlich sortiert und dargestellt,
+	Orthogonalpolynome sehr in den Vordergrund ger"uckt. Weniger detailliert
+	als Deuflhard, daf"ur ausgearbeitete Algorithmen in Pseudocode.
+	Inhalt: Fehleranalyse, Lineare Gleichungssysteme, Ausgleichsrechnung,
+	Nichtlineare Gleichungen, Eigenwerte, Interpolation, Orthogonalpolynome,
+	Quadratur. Splines, Fourierreihen, Wavelets, Mathematische Modellierung,
+	Gew"ohnliche Differentialgleichungen: Anfangs- und Randwertprobleme, Partielle
+	Differentialgleichungen: Elliptische, parabolische, hyperbolische DGl
+	einschlie"slich Mehrgitterverfahren und adaptiver Gitter.}
+%
+\end{description}
+
+\subsection{Zur Programmiersprache C++}
+
+\paragraph{Begriffe:}
+Dynamische Speicherverwaltung,
+Namensr"aume,
+Ausnahmen (fangen und werfen),
+RTTI,
+STL (Strings, Streams, auto\_ptr
+sowie s"amtliche Container: vector, list, set, hash\_set)
+Definition und Deklaration,
+statische Klassen-Member,
+Operator"uberladung,
+Vererbung,
+Polymorphismus,
+Liskov'sches Substitutionsprinzip,
+virtuelle und rein virtuelle (abstrakte) Methoden,
+Interface und Implementierung,
+Templates,
+Template-Spezialisierungen,
+
+\paragraph{Literatur:}
+
+\begin{description}
+\item[Ulrich Breymann:] C++. Einf"uhrung und professionelle Programmierung.
+	Hanser $^9 2007$.
+
+	\textit{Sehr angenehm lesbare Einf"uhrung in C++. Inhalt:
+	Variablen, Kontrollstrukturen, Funktionen, Klassen, Zeiger,
+	Templates, Operatoren, Ausnahmen, Dateien und Streams.}
+%
+\item[André Willms:] C++. Einstieg f"ur Anspruchsvolle. Pearson $2005$.
+
+	\textit{Der Name ist sehr treffend. Guten C-Programmierern, die
+	zwar den Sprachumfang von C++ kennen, aber noch kaum objektorientiert
+	denken, wird viel "uber die OO-Denkweise nahegebracht. Daneben tausend
+	ungeahnte Details aus dem Schatzk"astlein des C++-Standards, die (wie
+	alles unn"utze Wissen) ihre Macht an v"ollig ungeahnter Stelle ausspielen.
+	Inhalt: Grundlagen: Datentypen, Anweisungen, Deklarations vs. Definition,
+	cv-Qualifizierung, Funktions-"uberladung. Klassen: Zugriffsrechte,
+	Kon- und Destruktoren, Zeiger vs. Konstanten, statische Elemente,
+	unvollendet konstruierte Objekte, verschachtelte Klassendefinitionen,
+	der "`this"'-Zeiger, Singleton-Ent"-wurfsmuster.
+	Dynamische Speicherverwaltung: Zeiger auf Felder, Funktionen, Klassenelemente,
+	new und delete auf Rohspeicher, Allokatoren, auto\_ptr, new-Handler.
+	Operator-"uberladung: Rechen- und kombinierte Operatoren, Vergleichs-,
+	Shift-, Klammeroperatoren, Umwandlungsoperatoren, ++ und -\;-.
+	Namensbereiche, Vererbung, Ausnahmen, Templates, Designfragen
+	bzgl. Vererbung (Schnittstelle vs. Implementierung, verschiedene Paradigmen).
+	Danach viele Beispiele zum OO-Design.}
+%
+\item[Helmut Herold, J"org Arndt:] C-Programmierung unter Linux, Unix,
+	Windows. N"urnberg: SuSE Press $2004$.
+
+	\textit{Alles, was wir je "uber C wissen wollten. Gro"se Ausf"uhrlichkeit,
+	auch in den Standard-Konstrukten. Inhalt: Alles, was zu C und nicht zu
+	C++ geh"ort (Beispiel: vollst"andige Beschreibung des \texttt{printf}-%
+	Formatstrings, variable Argumentlisten u.~"a.), manchmal in
+	verwirrender Reihenfolge. Macht nichts, da ausf"uhrliches Inhaltsverzeichnis
+	und gutes Register.}
+\end{description}
+
+\paragraph{Zur Header/Implementierungs-Trennung bei Templates}
+
+Es folgt nichts Verwunderliches, was nicht in anderen B"uchern schon st"unde.
+Nur leider ist es trotzdem nicht jedem bekannt, also wiederholen wir's kurz.
+
+Templatisierte Klassen m"ussen zur Compile-Zeit vollst"andig dargestellt werden
+k"onnen. Das hei"st: Irgendwann, nur auf jeden Fall gleichzeitig, mu"s der
+Compiler (a) die Implementierung einer templatisierten Klasse kennen, (b)
+wissen, f"ur welche Template-Parameter er Code erzeugen und dann kompilieren soll.
+Bei nicht-templatisierten Klassen ist letzteres kein Problem, also kann
+die Implementierung einer Klasse (wie "ublich) in einer eigenen \texttt{cpp}-Datei
+geschehen. Diese L"osung klappt f"ur templatisierte Klassen nicht ohne weiteres,
+denn beim Kompilieren der Klassen-Implementation wei"s der Compiler
+nicht unbedingt, f"ur welche Template-Parameter er Code erzeugen soll.
+Es gibt aus dem Dilemma zwei "ubliche Auswege:
+
+\textbf{Deklaration und Definition (Implementierung) gemeinsam:} Die Methoden der
+	Klasse werden in der gleichen Datei (genauer: der gleichen Compile-Unit)
+	implementiert, in der sie auch deklariert werden. Entweder direkt
+	im Klassenrumpf:
+	\begin{myverbatim}
+	template <typename RealType>
+	class Vector {
+		RealType * _data;
+		...
+	public:
+		RealType get ( int i ) const {
+			return _data[i];
+		}
+	};
+	\end{myverbatim}
+
+	oder au"serhalb der Klassendeklaration:
+
+	\begin{myverbatim}
+	template <typename RealType>
+	class Vector {
+		RealType * _data;
+		...
+	public:
+		RealType get ( int i ) const;
+	};
+	...
+	template <typename RealType>
+	RealType Vector<RealType>::get ( int i ) const {
+		return _data[i];
+	}
+	\end{myverbatim}
+
+\textbf{Definition aller ben"otigten Template-Instantiierungen innerhalb
+	der implementierenden Unit:} Der Compiler m"u"ste ja gar nicht
+	Code f"ur die gew"unschten Template-Parameter erzeugen, wenn er
+	ihnen begegnet, sondern mu"s nur beim Linken sicher sein, da"s er
+	den Code irgendwann einmal erzeugt hat. Warum nicht f"ur alle
+	gew"unschten Template-Parameter an einem gemeinsamen Ort, n"amlich
+	in der Unit, in der die Template-Klasse implementiert ist?
+
+	Die Definition der zu erzeugenden Template-Instantiierungen
+	gleicht der Syntax von Template-Spezialisierungen, nur da"s
+	kein Rumpf folgt: Die Datei \texttt{vec.cpp} enth"alt u.~a.
+	\begin{myverbatim}
+	template class aol::Vector<int>;
+	template class aol::Vector<double>;
+	\end{myverbatim}
+	In den "ubrigen Units, in denen der \id{aol::Vector}
+	verwendet wird, d"urfen dann nur diejenigen Template-Parameter
+	verwendet werden, f"ur die in \texttt{vec.cpp} Code
+	erzeugt wurde.
+
+Eine Mischung der beiden Varianten ist m"oglich: Man kann sowohl eine vollst"andige
+Implementierung der Template-Klasse angeben, so da"s eine Unit, die diese
+Datei includet, selbst Template-Instantiierungen vornehmen kann, und trotzdem
+noch Template-Instanzen angeben, die auf jeden Fall erzeugt werden sollen.
+
+Die erste Variante wird in den QuocMeshes immer verwendet, wenn nicht
+abzusehen ist, f"ur welche Template-Parameter die Klasse wohl
+erzeugt werden k"onnte, und auch stets dann, wenn die Un"ubersichtlichkeit,
+Deklaration und Definition in einer Datei zu haben, noch handhabbar ist.
+F"ur sehr gro"se, meist nur "uber \texttt{RealType} templatisierte Klassen
+(beispielsweise Vektoren), wird zuweilen die zweite M"oglichkeit verwendet.
+Bei Neuprogrammierung ist die erste Variante mit Trennung von
+Deklaration und Implementierung, vorzuziehen (so geschehen beim
+DTGrid-Code).
+
+\subsection{Zu den verwendeten Tools}
+
+\paragraph{Verwendete Programmierumgebungen:}
+\begin{enumerate}
+\item GCC kommandozeilenbasiert mit wechselnden Editoren\\Debugging mit ddd
+\item Eclipse mit C++-Plugin, dahinter GCC\\Eingebaute Schnittstelle zu ddd
+\item Visual Studio Express 2007\\Eingebauter Debugger
+\item Dev-C++
+\end{enumerate}
+Dabei ist die Voll-Optimierung des GCC wirkungsvoller (der erzeugte
+Code also schneller) als der Microsoft-Compiler.
+
+\paragraph{Grape.}
+Die Visualisierungssoftware Grape ist sehr weit ausgereift, wird allerdings
+im Kern seit einigen Jahren nicht mehr fortentwickelt. Sie l"auft nur unter
+Linux, unter Windows gibt es Darstellungsprobleme (permanentes Flackern).
+Grape wird beim Compilieren des \texttt{makefile.selection.default} stets
+erstellt.
+
+\paragraph{vtkFOX.}
+Das \textit{visualization toolkit} (vtk) ist an das FOX-Toolkit zur
+betriebssystemunabh"angigen Erstellung graphischer Benutzeroberfl"achen
+angedockt. Dadurch nutzen wir die Vorteile der einfachen GUI-Programmierung
+mit dem FOX-Toolkit und die OpenGL-Unterst"utzung des vtk. Der
+Funktionsumfang ist wesentlich geringer als von Grape, daf"ur
+befindet sich vtkFOX unter aktiver Entwicklung (Stand M"arz 2008).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Tricks und Verfahrensweisen}
+
+\subsection{Der Barton-Nackman-Trick}
+
+\subsection{Traits}
+
+\subsection{Programmierstil und -Konventionen}
+
+Hausarbeit erfordert eine straffe Organisation -- wenn sie effektiv sein
+soll. Oberster Grundsatz hierbei hei"st: Erst denken, dann handeln.%
+\footnote{Loriot: Pappa ante portas.}
+
+\input{QuocConventions}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Praktische Entwicklung}
+
+\anmerkung{Dieser Abschnitt soll alle Hinweise enthalten, die bei der Benutzung der
+folgenden Tools in der Arbeitsgruppe zu beachten sind. Scheidelinie stets:
+"`Gilt dieses oder jenes nur in Zusammenhang mit der QuocMeshBibl.?"' Sonst
+nur Verweis auf Literatur bzw. das Wiki.}
+
+\subsection{Subversion}
+
+\anmerkung{Verweis aufs Wiki, Angabe mindestens einer ersch"opfenden Literaturquelle
+zu Idee von und Umgang mit CVS.\\
+Benimmregeln zum Einchecken: Keine nicht-winzigen Daten, nie ohne Kommentar,
+kein Commit ohne Kompilieren der \textit{default}-Tests.}
+
+\subsection{make}
+
+\anmerkung {
+		  Verweis auf eine gut lesbare makefile-Dokumentation\\
+		  Aufbau, Speicherort,
+		  Erzeugung, Aufgabe und Funktion der unterschiedlichen makefiles,\\
+		  Aufgabe, Funktion, Unterschiede der Targets\\
+		  Unterschiede bei Aufruf in verschiedenen Verzeichnissen.}
+
+\subsection{Compiler, Debugging-Tools, Entwicklungsumgebungen}
+
+\anmerkung{Womit programmieren wir, welche Erfahrung gibt es mit anderen
+		  Umgebungen, Vor-/Nachteile der Compiler.}

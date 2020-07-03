@@ -1,0 +1,290 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%                 Chapter The FEOPInterface
+%                 written by Marc Droske
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{The FEOPInterface}
+
+\newcommand{\dx}{\,\mathrm{d}x}
+\newcommand{\V}{{\mathcal V}}
+
+\section{Finite-Element-Operators}
+
+Example: Poisson equation
+\begin{eqnarray*}
+ u - \Delta u & = & f  \quad \mbox{ in } \Omega \\
+\partial_\nu u &=& 0 \quad \mbox{ on } \partial \Omega
+\end{eqnarray*}
+
+weak formulation (integration, integration by parts)
+\begin{equation}
+\int_\Omega  u \varphi \dx + \int_\Omega \nabla u \nabla \varphi \dx = \int_{\partial \Omega } \underbrace{\nabla u \cdot \nu}_{=0} \varphi \dx + \int f \varphi \dx
+\end{equation}
+for all $\varphi\in H^{1,2}(\Omega)$.
+\begin{equation}
+ a(u,\varphi) = F( \varphi )
+\end{equation}
+
+a continuous formulation (elliptic):
+
+bounded continuous bilinear form $a:\V\times\V:\to \R$
+\begin{itemize}
+\item boundedness $a(u,v) \leq C \|u\|_{\V}\|v\|_{\V}$
+\item coercivity $a(u,u) \geq c \|u\|_{\V}^2$, $c>0$.
+\end{itemize}
+
+$F\in \V'$ bounded linearform.
+
+existence and uniqueness by Lax-Milgram.
+
+\section{Discretization}
+
+replace $\V$ by a finite dimensional subspace $\V_h \subset \V$, with basis $(\varphi_i)_i$.
+\begin{equation}
+u_h = \sum_j \bar U_j \varphi_j
+\end{equation}
+
+\begin{eqnarray*}
+\int_\Omega \sum_j \bar U_j \varphi_j \varphi_i \dx + \int_\Omega\sum_j \bar U_j \nabla \varphi_j \cdot \nabla \varphi_i \dx  & = & F(\varphi_i)  \\
+ \sum_j \bar U_j \underbrace{\int_\Omega \varphi_j \varphi_i \dx}_{=: \mathbf{M}_{ij}} + \sum_j \bar U_j \underbrace{\int_\Omega\nabla \varphi_j \cdot \nabla \varphi_i \dx}_{=:\mathbf{L}_{ij}}  & = & F(\varphi_i) \\
+(\mathbf{M} + \alpha \mathbf{L}) \bar U &=& \bar F
+\end{eqnarray*}
+
+How to construct finite dimensional subspaces?
+
+\begin{itemize}
+\item Partition of $\Omega_h$ into a triangulation $\bar \Omega = \bigcup_{T\in \mathcal{T}} \bar T $
+\item local basis on cells $\bar T$ (Lagrange-basis, Hermite-basis, etc. )
+\end{itemize}
+
+
+%\input{ref_cell.pstex_t}
+
+Assembly of $\mathbf{L}$: Traverse all elements, compute for all
+$i, j$, such that $\mathrm{supp} \varphi_i \cap \mathrm{supp} \varphi_j \cap T \neq \emptyset$, the integrals $\int_T \nabla \varphi_i \nabla \varphi_j \dx$.
+
+For QuocMeshes $T(x) = h x + b$, hence
+\begin{eqnarray*}
+\int_T \nabla \hat \varphi_i\circ \phi^{-1} \nabla \hat \varphi_j\circ\phi^{-1}\dx & = &
+\frac{|T|}{|\hat T|} \int_{\hat T} \nabla \hat \varphi_i \cdot \nabla  \hat \varphi_j h^{-2}\dx \\
+& =  & h^{d-2} \int_{\hat T} \nabla \hat \varphi_i \cdot \nabla  \hat \varphi_j\dx
+\end{eqnarray*}
+
+\section{main ingredients}
+
+\begin{itemize}
+\item Definition of the discrete function space ($\leadsto$ \id{Configurators})
+  \begin{itemize}
+  \item iterator over cells $\leadsto$ \id{qc::GridDefinition::OldAllElementIterator}
+  \item mapping of local indices to global indices $\leadsto$ \id{qc::FastILexMapper}
+  \item quadrature rules on reference elements e.g. $\leadsto$ \id{aol::GaussQuadrature}
+  \item definition of basefunction set $\leadsto$ \id{BaseFunctionSet}, the basefunctionset also does cached evaluation
+for quadrature.
+  \end{itemize}
+\item Finite-Element operator related
+  \begin{itemize}
+    \item assembly of local matrices.
+  \end{itemize}
+\end{itemize}
+
+{\small
+Configurators define and provide:
+\begin{myverbatim}
+class MyConfiguratorForBilinear2DElements {
+  typedef qc::Element                                ElementType;
+  typedef qc::GridDefinition::OldAllElementIterator  ElementIteratorType;
+  typedef RealType                                   Real;
+  typedef qc::GridDefinition                         InitType;
+
+  const ElementIteratorType &begin( ) const;
+  inline const ElementIteratorType &end( ) const;
+  RealType H( const qc::Element& ) const;
+
+  typedef Vec2<_RealType>     VecType;
+  typedef Matrix22<_RealType> MatType;
+
+  typedef qc::FastUniformGridMatrix<_RealType,qc::QC_2D> MatrixType;
+  typedef BaseFunctionSetMultiLin<...,_QuadType> BaseFuncSetType;
+
+  static const int maxNumLocalDofs = 4;
+  static const qc::Dimension Dim = qc::QC_2D;
+  int getNumLocalDofs( const qc::Element & ) const;
+  int getNumGlobalDofs( ) const;
+  const BaseFuncSetType& getBaseFunctionSet( const qc::Element &El ) const;
+  int localToGlobal( const qc::Element &El, const int localIndex ) const;
+  MatrixType* createNewMatrix( );
+};
+\end{myverbatim}
+}
+
+In the quocmesh library exist default configurator classes by using (nested) traits:
+\begin{myverbatim}
+typedef
+qc::QuocConfiguratorTraitMultiLin<
+         REAL,         // RealType
+         qc::QC_2D,    // Dimension
+         aol::GaussQuadrature<REAL,qc::QC_2D,3> >
+ConfType;
+\end{myverbatim}
+The last line specifies the type of Quadrature to be used, here
+Gauss-Quadrature of order $3$.
+
+with this at hand the setup of a stiffness or mass matrix is all that easy:
+\begin{myverbatim}
+ aol::StiffOp<ConfType> stiff( grid, MODE );
+ aol::MassOp<ConfType>  mass( grid, MODE );
+\end{myverbatim}
+where \id{MODE} is either \id{aol::ASSEMBLED} or \id{aol::ONTHEFLY}.
+On the fly operators don't need any memory but are slower.
+
+\section{Support for lumped mass-matrices}
+
+standard lumped mass matrix defined by
+\begin{equation}
+(\mathbf{M}_h)_{ij} := \int_\Omega \mathcal{I}_h(\varphi_i \varphi_j)) \dx
+\end{equation}
+
+\begin{myverbatim}
+aol::LumpedMassOp<ConfType>
+     lumpedMass( grid, INVERT_MODE );
+\end{myverbatim}
+\id{INVERT\_MODE} is either \id{aol::INVERT} or \id{aol::DO\_NOT\_INVERT}
+
+
+Consider heat equation $(\mathbf{M} + \tau \mathbf{L})\bar U^{n+1} = \mathbf{M}U^{n}$.
+\begin{myverbatim}
+aol::StiffOp<ConfType> stiff( grid );
+aol::MassOp<ConfType>  mass( grid );
+aol::LinCombOp<aol::Vector<REAL> > op;
+op.append( mass );
+op.append( stiff, tau );
+aol::CGInverse<aol::Vector<REAL> > inv( op );
+mass.apply( u_old, rhs );
+inv.apply( rhs, u_new );
+\end{myverbatim}
+
+That's all.. :-)
+
+
+Alternative: FEOp's can assemble themselves into other matrices:
+\begin{myverbatim}
+aol::StiffOp<ConfType> stiff( grid );
+aol::MassOp<ConfType>  mass( grid );
+aol::SparseMatrix<REAL> mat( grid );
+stiff.assembleAddMatrix( mat );
+mat *= tau;
+mass.assembleAddMatrix( mat );
+aol::CGInverse<aol::Vector<REAL> > inv( mat );
+mass.apply( u_old, rhs );
+inv.apply( rhs, u_new );
+\end{myverbatim}
+
+
+There exist easy to use interfaces for operators of the form
+\begin{itemize}
+\item $\div( a(x) \nabla u )$ $a$ scalar, $\leadsto$ \id{FELinScalarWeightedStiffInterface}
+\item $\div( A(x) \nabla u )$ $A$ a matrix, $\leadsto$ \id{FELinMatrixWeightedStiffInterface}
+\item $a(x) u$, $\leadsto$ \id{FELinScalarWeightedMassInterface}
+\end{itemize}
+
+Generation of a discrete function given a vector of coefficients.
+\begin{myverbatim}
+aol::DiscreteFunction<ConfType> discFunc( grid, coeffs );
+discFunc.evaluate( El, locCoords );     // slow
+discFunc.evaluateAtQuadPoint( El, i );  // fast
+discFunc.evaluateGradient( El, locCoords, grad );     // slow
+discFunc.evaluateGradientAtQuadPoint( El, i, grad );  // fast
+\end{myverbatim}
+
+\section{Customization: example mean curvature flow}
+\begin{multline*}
+\partial_t u + \div\left\{ \frac {\nabla u}{\|\nabla u\|} \right\} \|\nabla u\| = 0 \quad \Rightarrow \quad
+\left(\boldsymbol{M}+ \tau \boldsymbol{L}\right) \bar U^{n+1} = \boldsymbol{M} U^n \\
+\mbox{ where } \quad \boldsymbol{M}_{ij} = \int_\Omega \frac {\varphi_i \varphi_j}{\|\nabla U^{n} \|_\epsilon } \dx \quad \mbox{ and } \quad \boldsymbol{L}_{ij} = \int_\Omega \frac {\nabla \varphi_i \cdot \nabla \varphi_j}{\|\nabla U^{n} \|_\epsilon } \dx
+\end{multline*}
+
+How to implement the matrices with the \id{FEOpInterface}-classes?
+
+\begin{itemize}
+\item $\boldsymbol{M}$ $\leadsto$ derive from \id{FELinScalarWeightedMassInterface}
+\item $\boldsymbol{L}$ $\leadsto$ derive from \id{FELinScalarWeightedStiffInterface}
+\end{itemize}
+
+{\small
+\begin{myverbatim}
+template <typename Conf_T>
+class MCMStiffOp :
+public aol::FELinScalarWeightedStiffInterface<Conf_T, MCMStiffOp<Conf_T> > {
+public:
+  typedef typename Conf_T::RealType RealType;
+protected:
+  aol::DiscreteFunctionDefault<Conf_T> *_discFunc;
+  RealType _eps;
+public:
+  MCMStiffOp( const typename Conf_T::InitType &Initializer,
+              aol::OperatorType OpType = aol::ONTHEFLY,
+              RealType Epsilon = 1. )
+: aol::FELinScalarWeightedStiffInterface<Conf_T, MCMStiffOp<Conf_T> >( Initializer, OpType ),
+      _discFunc( NULL ), _eps( Epsilon )  {
+  }
+
+  void setImage( const aol::Vector<RealType> &Image ) { [...] }
+
+  inline RealType getCoeff( const qc::Element &El, int QuadPoint,
+                            const typename Conf_T::VecType& RefCoord ) const {
+    if ( !_discFunc ) {  throw aol::Exception( "first!", __FILE__, __LINE__ );  }
+    typename Conf_T::VecType grad;
+    _discFunc.evaluateGradientAtQuadPoint( El, QuadPoint, grad );
+    return 1. / sqrt( grad.normSqr() + _eps*_eps );
+  }
+};
+\end{myverbatim}
+}
+
+
+\section{Advantages}
+\begin{enumerate}
+\item minimization of code duplication $\leadsto$ concentrate on your problem.
+\item effiency due to inlined \id{getCoeff} function
+\item works automatically in 2D as well as 3D!
+\item works for arbitrary finite element spaces
+\item works for arbitrary quadrature rules
+\item works for arbitrary grids.
+\end{enumerate}
+\section{this class (and others) are already implemented in \id{mcm.h}}
+
+
+
+\section{Other classes---for right hand sides:}
+\begin{itemize}
+\item for \id{Vector}'s
+  \begin{itemize}
+  \item \id{FENonlinOpInterface} $\leadsto$ $\int_\Omega f(U)\varphi_i\dx$
+  \item \id{FENonlinDiffOpInterface} $\leadsto$ $\int_\Omega \vec f(U)\cdot \nabla \varphi_i\dx$
+  \end{itemize}
+\item for \id{MultiVector}'s
+  \begin{itemize}
+  \item \id{FENonlinVectorOpInterface} $\leadsto$ $\int_\Omega \vec f(U)\varphi_i\dx$
+  \item \id{FENonlinVectorDiffOpInterface} $\leadsto$ $\int_\Omega \boldsymbol{F}(U)\cdot \nabla \varphi_i\dx$
+  \end{itemize}
+\end{itemize}
+
+
+\section{Overview over Integral-Interface-classes}
+\input{feop_list}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "manual"
+%%% End:

@@ -1,0 +1,41 @@
+\chapter{Memory Manager}
+
+provide memory needs time $O(n)\Rightarrow$ slow!
+
+\underline{ idea: vector management }
+\vspace{-1ex}
+\begin{itemize}
+\item organize unused vectors in a stack: first in, first out
+\item need new vector: search in stack \\ fitting vector in stack $\rightarrow$ reuse \\ no fitting vector $\rightarrow$ allocate memory
+\end{itemize}
+
+\underline{ restrictions for stack-size: }
+\vspace{-1ex}
+\begin{itemize}
+\item number of vectors in stack\\ default: \texttt{max\underline{ }retain = 128}
+\item used memory\\ default: \texttt{memusage\underline{ }limit = 256MB}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\underline{ good: } \\ vectors of non needed length disappear from the stack first
+
+\underline{ bad: } \\ need many vectors of different length $\rightarrow$ slower! \\
+solution: switch off memory manager ( set variables to zero )
+
+\underline{ public methods to use memory manager: }
+\begin{itemize}
+\item protected method \texttt{allocate( lenght )}: reuse vector in stack, if possible (call by constructor)
+\item protected method \texttt{deallocate( *ptrDataType, length )}: put vector into stack (call by destructor)
+\item public method \texttt{reserve( length )}: extends vector, if \texttt{vector.size() < length}
+\item public method \texttt{resize()}: extends or shortens vector
+\item public method \texttt{deleteUnlocked( number )}: deletes ( number ) vectors from stack
+\item public method \texttt{setMaxRetain( number )}: changes \texttt{max\underline{ }retain}
+\item \textbf{TODO: } method for changing \texttt{memusage\underline{ }limit}
+\end{itemize}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "manual"
+%%% End:

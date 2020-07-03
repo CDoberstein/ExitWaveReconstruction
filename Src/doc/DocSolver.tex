@@ -1,0 +1,331 @@
+
+
+\chapter{Solver (Direct, Iterative)}
+\section{Implemented solver}
+
+%\vspace{-.7cm}
+\begin{minipage}{\linewidth}
+\begin{minipage}[t]{0.5\linewidth}
+\underline{ direct solver: }
+\begin{itemize}
+\item LUInverse
+\item (QRDecomposeGivernsBase)
+\item (QRDecomposeHouseholderMatrix)
+\end{itemize}
+\underline{ iterative solver: }
+\begin{itemize}
+\item CGInverse
+\item PCGInverse
+\item BiCGInverse
+\item PBiCGInverse
+\item PBiCGStabInverse
+\item GMRESInverse
+\item GaussSeidelInverse
+\item (JacobiSmoother)
+\item (abstractMultigrid)
+\end{itemize}
+\end{minipage}
+\begin{minipage}[t]{0.5\linewidth}
+\underline{ preconditioner: }
+\begin{itemize}
+\item ILU0Preconditioner
+\item SSORPreconditioner
+\end{itemize}
+\underline{ relicts (not for use): }
+\begin{itemize}
+\item EllipticSolver
+\item ParabolicTimestep
+\item ParabImplEuler
+\item CGInverseProjection
+\item ApproxCGInverse
+\end{itemize}
+\underline{ not implemented: }
+\begin{itemize}
+\item multigraph
+\end{itemize}
+\end{minipage}
+\end{minipage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection { QRDecompose}
+\subsubsection{ QRDecomposeGivensBase, QRDecomposeHouseholderMatrix: } in \texttt{aol/QRDecomposition.h}
+\begin{itemize}
+\item \textbf{no solver!}
+\item QRDecomposeGivensBase: \\
+protected method \texttt{eliminate( R, col, toEliminate, eliminateFrom )}:\\
+eliminates (toEliminate) element in column (col) with (eliminateFrom) \\
+not for use ( abstract function \texttt{transform} )
+\item QRDecomposeHouseholderMatrix: derived from QRDecomposeGivensBase\\
+for right upper triangle matrices with occupied secondary diagonal
+\item using: \begin{quote}
+\texttt{aol::QRDecomposeHouseholderMatrix< RealType > QRH; \\
+QRH.transform( H, R, Q );} \end{quote}
+with \texttt{H} H-matrix of GMRES-method
+\item with matrices \texttt{FullMatrix< RealType > }
+\begin{flushright} \texttt{H( row, col ), R( row, col ), Q( row, row ); } \end{flushright}
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection {Using solver}
+we want to solve the system of linear equations $Ax = b$ with a properly solver
+
+$//$ declaration and instantiation:\\
+$//$ operator\\
+\texttt{{\em solverclass}< {\em templateparameter} > A( {\em parameterlist} ); }\\[2ex]
+$//$\texttt{b}: right hand side \\
+$//$\texttt{x}: initial value $\rightarrow$ solution \\
+\texttt{VectorType b( {\em parameterlist} ), x( {\em parameterlist} ); \\
+initialise\underline{ }rhs( b ); \\ initialise\underline{ }start( x );}\\[2ex]
+$//$ solve equation Ax=b\\
+\texttt{A.apply( b, x );}
+
+after iteration: \texttt{x} = solution of equation
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section {Direct solver for $Ax=b$}
+\subsection{ LUInverse: }
+\begin{itemize}
+\item derived from \texttt{Matrix< RealType >} in \texttt{project$/$bemesh$/$luinverse.h}
+\item uses methods \texttt{makeLU} and \texttt{solveLU} of \texttt{FullMatrix}
+\item using: \begin{quote}
+\texttt{aol::LUInverse< RealType > luSolver(  Matrix\underline{ }A  ); \\
+luSolver.apply( b, x );} \end{quote}
+\item with matrix \texttt{aol::Matrix< RealType > Matrix\underline{ }A( row, col );}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section {Iterative solver for $Ax = b$}
+\label{sec:iterativeSolvers}
+\subsection{ CGInverse: }
+\begin{itemize}
+\item derived from \texttt{InverseOp }in \texttt{aol::Solver.h}
+\item Conjugate Gradient method, most effective for spd matrices (symmetric, positive definit)
+\item using: \begin{quote}
+\texttt{aol::CGInverse< VecType, OpType = Op< VecType > >}
+\begin{flushright} \texttt{cgSolver( Operator\underline{ }A, Epsilon, MaxIter );} \end{flushright}
+\texttt{cgSolver.apply( b, x ); } \end{quote}
+\item default values: \\
+\texttt{Epsilon = 1.e-16, \\ MaxIter = 1000}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{ PCGInverse: }
+\begin{itemize}
+\item derived from \texttt{InverseOp }in \texttt{aol::Solver.h}
+\item CG method with preconditioning
+\item using: \begin{quote}
+\texttt{aol::PCGInverse< VecType,}
+$\begin{array}[t]{l}
+\texttt{OpType = Op< VecType >,} \\ \texttt{iOpType = Op< VecType > > }
+\end{array}$
+\begin{flushright} \texttt{pcgSolver( Operator\underline{ }A, approxInverseOperator\underline{ }IA, Epsilon, MaxIter ); }
+\end{flushright}
+\texttt{pcgSolver.apply( b, x );} \end{quote}
+\item default values: \\
+\texttt{Epsilon = 1.e-16, \\ MaxIter = 50}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{ BiCGInverse:}
+\begin{itemize}
+\item derived from \texttt{InverseOp }in \texttt{aol::Solver.h}
+\item BIorthogonal CG, for non symmetric, non singular matrices
+\item using: \begin{quote}
+\texttt{aol::BiCGInverse< VecType > }
+\begin{flushright} \texttt{bicgSolver( Operator\underline{ }A, transposeOperator\underline{ }AT, Epsilon, MaxIter );} \end{flushright}
+\texttt{bicgSolver.apply( b, x); } \end{quote}
+\item default values: \\
+\texttt{Epsilon = 1.e-16, \\ MaxIter = 50}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{ PBiCGSolver:}
+\begin{itemize}
+\item derived from \texttt{InverseOp }in \texttt{aol::Solver.h}
+\item BiCG with preconditioning
+\item using: \begin{quote}
+\texttt{aol::PBiCGInverse< VecType > }
+\begin{flushright} \texttt{pbicgSolver( Operator\underline{ }A, transposeOperator\underline{ }AT, approxInverseOperator\underline{ }IA, Epsilon, MaxIter );}
+\end{flushright}
+\texttt{pbicgSolver.apply( b, x );}\end{quote}
+\item default values: \\
+\texttt{Epsilon = 1.e-16, \\ MaxIter = 50}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsection{ PBiCGStabInverse: }
+\begin{itemize}
+\item derived from \texttt{InverseOp }in \texttt{aol::Solver.h}
+\item variation of BiCG, with preconditioning $\Rightarrow$ more stable
+\item using: \begin{quote}
+\texttt{aol::PBiCGStabInverse< VecType > \\
+pbicgstabSolver( Operator\underline{ }A, approxInverseOperator\underline{ }IA, Epsilon, MaxIter ); \\
+pbicgstabSolver.apply( b, x ); }
+\end{quote}
+\item default values: \\
+\texttt{Epsilon = 1.e-16, \\ MaxIter = 50}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsection{ GMRESInverse: }
+\begin{itemize}
+\item derived from \texttt{InverseOp }in \texttt{aol::Solver.h}
+\item  Generalized Minimum RESidual method, for non symmetric, non singular matrices\\
+can become unstable
+\item using: \begin{quote}
+\texttt{aol::GMRESInverse< VecType > }
+\begin{flushright} \texttt{ gmresSolver( Operator\underline{ }A, Epsilon, MaxInnerIter, MaxIter );} \end{flushright}
+\texttt{gmresSolver.apply( b, x );}
+\end{quote}
+\item default values: \\
+\texttt{Epsilon = 1.e-16, \\ MaxInnerIter = 10, \\ MaxIter = 50}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsection{ GaussSeidelInverse: }
+\begin{itemize}
+\item derived from \texttt{InverseOp } in \texttt{aol::sparseSolver.h}
+\item using: \begin{quote}
+\texttt{GaussSeidelInverse< VecType, MatType > }
+\begin{flushright} \texttt{gaussseidelSolver( Matrix\underline{ }A, Epsilon, MaxIter, Relaxation  );}
+\end{flushright}
+\texttt{gaussseidelSolver.apply( b, x );}
+\end{quote}
+\item \textbf{for matrices only!}
+\item default values: \\
+\texttt{Epsilon = 1.e-16, \\ MaxIter = 50, \\ Relaxation = 1.0}
+\item \texttt{Relaxation $\not=$ 1 $\Rightarrow$ } SOR
+\item \texttt{MatType} must support \texttt{makeRowEntries }
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection {comments}
+
+solver derived from \texttt{InverseOp: }
+\begin{itemize}
+\item no guarantee for convergence with nonsymmetric operators
+\item solver for \texttt{Vector< RealType>} AND \texttt{MultiVector< RealType> }
+\item classes derived from \texttt{aol::Op< VecType >}:
+\begin{itemize}
+\item \texttt{aol::Matrix }
+\item \texttt{aol::FEOp, aol::FEOpInterface }
+\item \texttt{aol::LinCombOp, aol::CompositeOp, ... }
+\end{itemize}
+\item quiet-mode: default = false \\
+change with method \texttt{setQuietMode( bool )} for CGInverse, PCGInverse
+\item change iteration steps with method \texttt{changeMaxIterations} for CGInverse, PCGInverse
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{JacobiSmoother: }
+\begin{itemize}
+\item derived from \texttt{Op< Vector< Realtype > > } in \texttt{aol::sparseSolver.h}
+\item used for multigrid (pre- and postsmoothing)
+\item \textbf{no abort condition on Epsilon! always computes \texttt{MaxIter} iteration steps}
+\item using: \begin{quote}\texttt{JacobiSmoother< RealType, MatType > }
+\begin{flushright} \texttt{jacobiSolver( Matrix\underline{ }A, Epsilon, MaxIter, Relaxation );} \end{flushright}
+\texttt{jacobiSolver.apply( b, x );}
+\end{quote}
+\item default values: \\
+\texttt{Epsilon = 1.e-16, \\ MaxIter = 50, \\ Relaxation = 1.0}
+\item \texttt{Relaxation $\not=$ 1 $\Rightarrow$ } Richardson
+\item \texttt{MatType} must support \texttt{makeRowEntries }
+\item quiet-mode: default = true
+\item for \texttt{Vector< RealType >} only
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter {Preconditioner}
+\section{SSORPreconditioner: }
+\begin{itemize}
+\item derived from \texttt{Op< Vector< RealType > >} in \texttt{aol::sparseSolver.h}
+\item for positive definite matrices
+\item one step of ssor-iteration
+\item using: \begin{quote}
+\item \texttt{aol::SSORPreconditioner< RealType, MatType > ssorSolver( Matrix\underline{ }A, Omega );\\
+ssorSolver.apply( b, x );}
+\end{quote}
+\item \texttt{MatType} must support \texttt{makeRowEntries }
+\item default value \texttt{Omega = 1.2}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{ILU0Preconditioner: }
+\begin{itemize}
+\item derived from \texttt{Op< Vector< RealType > >} in \texttt{aol::sparseSolver.h}
+\item Incomplete LU decomposition, without modification of non diagonal elements
+\item using: \begin{quote}
+\texttt{ILU0Preconditioner< RealType, MatType > ilu0Solver( MatrixA ); \\
+ilu0Solver.apply( b, x );} \end{quote}
+\item \texttt{MatType} must support \texttt{makeRowEntries} and \texttt{makeSortedRowEntries}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section {Sparse matrices: }
+\texttt{MatType} must support \texttt{makeRowEntries} and \texttt{makeSortedRowEntries} (for \texttt{ILU0Preconditioner})\\
+$\Rightarrow$ use one from the following matrices ( or derived )
+\begin{itemize}
+\item in \texttt{sparseMartrices.h}:
+\begin{itemize}
+\item \texttt{aol::GenSparseMatrix< RealType > A( row, column);} or \\ \texttt{aol::GenSparseMatrix< RealType > A( Grid );}\\
+public methods \texttt{A.set( i, j, value);} and \texttt{A.set( i, j, value);}
+\item \texttt{aol::SparseMatrix< RealType >} derived from \texttt{aol::GenSparseMatrix}
+\item \texttt{aol::UniformGridSparseMatrix< RealType >} derived from \texttt{aol::GenSparseMatrix}
+\end{itemize}
+\item in \texttt{qc::fastUniformGridMatrix.h}:
+\begin{itemize}
+\item \texttt{qc::FastUniformGridMatrix< RealType, dimension > A( Grid );} \\
+public methods \texttt{A.set( i, j, value);} and \texttt{A.set( i, j, value);}\\
+\textbf{NO} method \texttt{makeSortedRowEntries} $\Rightarrow$ \textbf{NOT} for \texttt{ILU0Preconditioner}!
+\end{itemize}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{ example: heat equation }
+
+\[ \partial_t u - \kappa \triangle u = f \]
+
+weak formulation and time discretization (implicit euler):
+\begin{eqnarray*} \int \frac{ \left(u^{i+1} - u^i\right) \phi}{\tau} & = & - \int \kappa \nabla u^{i+1} \nabla \phi + \int f \phi \\
+\Rightarrow (M + \tau \kappa L) U^{i+1} & = & M U^i + \tau M F
+\end{eqnarray*}
+
+for one timestep we have to solve \qquad $ Ax = b $ \\ [1cm]
+with $x = U^{i+1}, A = M + \tau \kappa L$ and $ b = M U^i + \tau M F$
+
+for simplicity: $\kappa = 1, f \equiv 0 \quad \Rightarrow \quad (M + \tau L)U^{i+1} = M U^i$
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "manual"
+%%% End:
