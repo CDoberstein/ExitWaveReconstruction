@@ -2,7 +2,7 @@
 
 This repository contains an implementation of the variational method for exit wave reconstruction described in 
 
-+ [1] Christian Doberstein. Joint Exit Wave Reconstruction and Multimodal Registration of Transmission Electron Microscopy Image Series (Dissertation). *RWTH Aachen University*, 2020.
++ [1] Christian Doberstein. Joint Exit Wave Reconstruction and Multimodal Registration of Transmission Electron Microscopy Image Series (Dissertation). *RWTH Aachen University*, 2020. [[DOI](http://doi.org/10.18154/RWTH-2020-06672)]
 
 + [2] Christian Doberstein and Benjamin Berkels. A least-squares functional for joint exit wave reconstruction and image registration. *Inverse Problems*, 35(5), 2019. [[DOI](https://doi.org/10.1088/1361-6420/ab0b04) | [arXiv](https://arxiv.org/abs/1812.02786)]
 
