@@ -12,7 +12,7 @@ Please feel free to contact me at <doberstein@aices.rwth-aachen.de> if you have 
 
 ## Prerequisites
 
-The project can be built and run under Linux or macOS. In order to build the project, cmake and make as well as a C++11 capable compiler such as gcc are required. Additionally, the openmp, fftw, boost and tiff libraries are needed as well as gnuplot and a properly working OpenCL environment if some of the computations are performed on a GPU.
+The project can be built and run under Linux or macOS. In order to build the project, cmake and make as well as a C++11 capable compiler such as gcc are required. Additionally, the openmp, fftw, boost and tiff libraries are needed as well as gnuplot and a properly working OpenCL environment if some of the computations are performed on a GPU. Some of the image conversion programs in `Bin/tools/image/converter` require the cimg library and setting `-DUSE_CIMG=1` in `Bin/goLinux.sh`.
 
 ## Compiling
 
