@@ -55,15 +55,27 @@ minAlg 1
 #  1: read input data from file (see the inputDataFile parameter)
 inputDataSource 0
 
-#File name of the input data that should be used if
+#File path to the input data that is read from file if
 #inputDataSource = 1
-#  This may either be a .dm3 file containing a TEM image series or a
-#  binary exit wave with the extension .wav, which may be generated
-#  with the DrProbe software for example:
-#    https://er-c.org/barthel/drprobe/
-#    https://doi.org/10.1016/j.ultramic.2018.06.003
-#  The file path may be an absolute or relative path with respect to
-#  this parameter file.
+#
+#The following input data formats are currently supported:
+#  (1) A single .dm3 file containing the entire TEM image series
+#  (2) A directory containing N individual image files of the file
+#      type .dm3, .q2bz, .tiff, .ser or .png. The image files need to
+#      be named as "ImageXXX", where XXX is replaced by the image
+#      number (starting from zero) in the format specified with the
+#      outputNumberingFormat parameter above. The number of images N
+#      is specified below in the image settings section.
+#  (3) A binary exit wave with the extension .wav, which may be
+#      generated with the DrProbe software for example:
+#        https://er-c.org/barthel/drprobe/
+#        https://doi.org/10.1016/j.ultramic.2018.06.003
+#      In this case a focus series is simulated from the given exit
+#      wave using the settings in the input data simulation settings
+#      section below.
+#
+#The file path may be an absolute or relative path with respect to
+#this parameter file.
 inputDataFile ""
 
 #Options for saving intermediate results
