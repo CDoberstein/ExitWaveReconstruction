@@ -152,12 +152,12 @@ void convertSERToQuoc ( const string& ser_file_input, const string& quoc_file_ou
           if ( data.allDimsEqual() ) {
             qc::ScalarArray<double, qc::QC_2D> a ( data[0].size(), validNumberElements);
             a.copyUnblockedFrom ( data );
-            a.save ( aol::strprintf ( "%s%s", aol::getBaseFileName( quoc_file_output ).c_str(), qc::getDefaultArraySuffix( qc::QC_2D ) ).c_str(), qc::PGM_DOUBLE_BINARY );
+            a.save ( quoc_file_output.c_str ( ), qc::PGM_DOUBLE_BINARY );
           }
           else {
             for ( int i = 0; i < validNumberElements; ++i ) {
               qc::ScalarArray<double, qc::QC_1D> a ( data[i], aol::FLAT_COPY );
-              a.save ( aol::strprintf ( "%s%04i%s", aol::getBaseFileName( quoc_file_output ).c_str(), i, qc::getDefaultArraySuffix( qc::QC_1D ) ).c_str(), qc::PGM_DOUBLE_BINARY );
+              a.save ( quoc_file_output.c_str ( ), qc::PGM_DOUBLE_BINARY );
             }
             
           }
@@ -185,7 +185,7 @@ void convertSERToQuoc ( const string& ser_file_input, const string& quoc_file_ou
             qc::ScalarArray<double, qc::QC_2D> aFlipped ( numX, numY );
             aFlipped.loadRaw ( in, getSerSaveType ( dataType ), numX, numY );
             a.flipFrom ( aFlipped, qc::QC_Y );
-            a.save ( aol::strprintf ( "%s%03i%s", aol::getBaseFileName( quoc_file_output ).c_str(), i, qc::getDefaultArraySuffix( qc::QC_2D ) ).c_str(), qc::PGM_DOUBLE_BINARY );
+            a.save ( quoc_file_output.c_str ( ), qc::PGM_DOUBLE_BINARY );
 
             switch ( tagTypeID ) {
               case 0x4142:
