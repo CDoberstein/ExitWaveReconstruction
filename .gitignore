@@ -1,0 +1,14 @@
+Bin/CMakeCache.txt
+Bin/CMakeFiles/
+Bin/CTestTestfile.cmake
+Bin/Makefile
+Bin/cmake.selection
+Bin/cmake_install.cmake
+Bin/examples/
+Bin/external/
+Bin/libquocmesh.so
+Bin/projects/
+Bin/selfTest/
+Bin/tools/
+
+Example/
