@@ -337,6 +337,7 @@ void CreateInputData ( InputData<RealType>& input,
                        const Parameters<RealType>& Param,
                        const bool resumeReconstruction,
                        const string& reconstructionDir,
+                       const UserPrompts& default_action,
                        bool verbose = true ) {
   if ( verbose )
     cerr << "Creating the input data..." << endl;
@@ -347,7 +348,7 @@ void CreateInputData ( InputData<RealType>& input,
   if ( resumeReconstruction ) {
     // Load the input data from the previous reconstruction...
     // ... read the focus image series from file
-    LoadInputImageSeries ( input.ImageSeries, reconstructionDir + "InputData.dm3", Param, verbose );
+    LoadInputImageSeries ( input.ImageSeries, reconstructionDir + "InputData.dm3", Param, default_action, verbose );
     
     // ... also load inputArg if available
     if ( aol::fileExists ( reconstructionDir + "InputData/CroppedArg/.Arg" ) )
@@ -421,7 +422,7 @@ void CreateInputData ( InputData<RealType>& input,
       SimulateInputImageSeries ( input.ImageSeries, inputArg.Focus, inputArg.Translation, RealSpaceExitWave, Param, verbose );
     } else {
       // Read the focus image series from file...
-      LoadInputImageSeries ( input.ImageSeries, Param.inputDataFile, Param, verbose );
+      LoadInputImageSeries ( input.ImageSeries, Param.inputDataFile, Param, default_action, verbose );
     }
     
     // input: adjust Param

@@ -8,6 +8,8 @@
 #include <dm3Import.h>
 #include <denoising.h>
 
+enum class UserPrompts { Ask, Accept, Decline };
+
 /**
  * \brief Loads a binary exit wave from the file Param.inputDataFile
  */
@@ -113,6 +115,7 @@ template <typename RealType>
 void LoadInputImageSeries ( vector<Image<RealType>>& ImageSeries,
                             const string& path,
                             const Parameters<RealType>& Param,
+                            const UserPrompts& default_action,
                             const bool verbose = false ) {
   if ( verbose )
     cerr << "\tSearching for input images...";
@@ -349,10 +352,11 @@ void LoadInputImageSeries ( vector<Image<RealType>>& ImageSeries,
       cerr << endl << "Warning: Inpainting will overwrite the .q2bz image files with the inpainted images!" << endl
            << "Continue? (y/n)";
       
-      string answer;
-      cin >> answer;
+      string answer = "y";
+      if ( default_action == UserPrompts::Ask )
+        cin >> answer;
       
-      if ( answer != "y" )
+      if ( default_action == UserPrompts::Decline || answer != "y" )
         throw aol::Exception ( "Program stopped.", __FILE__, __LINE__ );
     }
     

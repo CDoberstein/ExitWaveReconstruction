@@ -10,9 +10,21 @@ typedef double RealType;
 #include "Preconditioner.h"
 
 int main ( int argc, char **argv ) {
-  if ( argc != 2 ) {
+  if ( argc != 2 && argc != 3 ) {
     PrintProgramUsage ( cerr, argv[0] );
     return 0;
+  }
+  
+  UserPrompts default_action = UserPrompts::Ask;
+  if ( argc == 3 ) {
+    if ( string ( argv[2] ) == "-y" )
+      default_action = UserPrompts::Accept;
+    else if ( string ( argv[2] ) == "-n" )
+      default_action = UserPrompts::Decline;
+    else {
+      PrintProgramUsage ( cerr, argv[0] );
+      return 0;
+    }
   }
   
   // Print time and floating point data type
@@ -46,9 +58,10 @@ int main ( int argc, char **argv ) {
   if ( aol::directoryExists ( reconstructionDir ) ) {
     cerr << "Found data from a previous reconstruction (" << local_reconstructionDir << "). Resume the reconstruction? [y/n]";
     
-    char answer;
-    cin >> answer;
-    if ( answer == 'y' || answer == 'Y' ) {
+    char answer = ' ';
+    if ( default_action == UserPrompts::Ask )
+      cin >> answer;
+    if ( default_action == UserPrompts::Accept || answer == 'y' || answer == 'Y' ) {
       cerr << "Resuming the reconstruction..." << endl << endl;
       resumeReconstruction = true;
       Param = Parameters<RealType> ( reconstructionDir + "InputData/ParameterFile.param" );
@@ -75,7 +88,7 @@ int main ( int argc, char **argv ) {
   InputData<RealType> input;
   Arguments<RealType> inputArg ( Param.subsection_width, Param.subsection_height, Param.N );
   
-  CreateInputData ( input, inputArg, Param, resumeReconstruction, reconstructionDir, true );
+  CreateInputData ( input, inputArg, Param, resumeReconstruction, reconstructionDir, default_action, true );
   SaveInputData ( input, inputArg, reconstructionDir );
   Param = input.Param;
   

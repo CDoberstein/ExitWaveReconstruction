@@ -36,10 +36,11 @@ void PrintProgramUsage ( ostream& out, const string& argv0 ) {
   const string reset_modifier = "\033[0m";
 
   out << bold_modifier << "Usage" << reset_modifier << endl
-      << "\t" << argv0 << " <Param>" << endl
+      << "\t" << argv0 << " <Param> [-y/-n]" << endl
       << endl
       << bold_modifier << "Arguments" << reset_modifier << endl
-      << "\tParam  Parameter file used for the reconstruction." << endl;
+      << "\tParam  Parameter file used for the reconstruction." << endl
+      << "\t-y/-n  Automatically answer all questions with yes (-y) or no (-n)." << endl;
 }
 
 // Print current time and date to out
